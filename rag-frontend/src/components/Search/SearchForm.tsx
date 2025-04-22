@@ -1,33 +1,18 @@
 import { useState } from 'react'
-import { searchDocuments, SearchResult } from '../../services/api'
 import { useLanguage } from '../../contexts/LanguageContext'
 
 interface SearchFormProps {
-  onSearchResults: (results: SearchResult[], totalResults: number) => void;
-  onSearchError: (error: string) => void;
-  onSearchStart: (query: string) => void;
+  onSearch: (query: string) => void;
+  loading: boolean;
 }
 
-const SearchForm = ({ onSearchResults, onSearchError, onSearchStart }: SearchFormProps) => {
+const SearchForm = ({ onSearch, loading }: SearchFormProps) => {
   const { t } = useLanguage()
   const [query, setQuery] = useState('')
-  const [loading, setLoading] = useState(false)
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     if (!query.trim()) return
-
-    setLoading(true)
-    onSearchStart(query)
-
-    try {
-      const response = await searchDocuments(query)
-      onSearchResults(response.results, response.total)
-    } catch (err) {
-      console.error('検索中にエラーが発生しました:', err)
-      onSearchError(t.SEARCH.ERROR)
-    } finally {
-      setLoading(false)
-    }
+    onSearch(query);
   }
 
   return (

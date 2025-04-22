@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import './SearchFilter.css'
-
+import { MasterDataItem } from '../../types/Search'
 // カテゴリとサブカテゴリの定義
 interface CategoryData {
   [key: string]: string[];
@@ -28,15 +28,20 @@ export interface FilterOptions {
 
 interface SearchFilterProps {
   onFilterChange: (filters: FilterOptions) => void;
+  masterData: MasterDataItem[];
 }
 
-const SearchFilter = ({ onFilterChange }: SearchFilterProps) => {
+const SearchFilter = ({ onFilterChange, masterData }: SearchFilterProps) => {
   const { t } = useLanguage()
+  // const [selectedCategory, setSelectedCategory] = useState<string>('')
+  // const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([])
+  // const [categoryList, setCategoryList] = useState<string[]>([])
+  // const [groupNameList, setGroupNameList] = useState<string[]>([])
 
   // フィルター状態の初期化
   const [filters, setFilters] = useState<FilterOptions>({
-    category: '',
-    subcategories: [],
+    category: masterData.length > 0 ? masterData[0].groupName : '',
+    subcategories: masterData.length > 0 ? masterData[0].categories : [],
     dateRange: {
       from: '',
       to: ''
@@ -52,7 +57,6 @@ const SearchFilter = ({ onFilterChange }: SearchFilterProps) => {
   useEffect(() => {
     if (filters.category && CATEGORY_MAP[filters.category]) {
       setAvailableSubcategories(CATEGORY_MAP[filters.category]);
-      // カテゴリが変更されたら、サブカテゴリの選択をリセット
       setFilters(prev => ({
         ...prev,
         subcategories: []
@@ -60,6 +64,9 @@ const SearchFilter = ({ onFilterChange }: SearchFilterProps) => {
     } else {
       setAvailableSubcategories([]);
     }
+    // if (masterData.length > 0) {
+    //   setGroupNameList(masterData.map(item => item.groupName))
+    // }
   }, [filters.category]);
 
   // カテゴリ変更ハンドラー
@@ -177,6 +184,9 @@ const SearchFilter = ({ onFilterChange }: SearchFilterProps) => {
           value={filters.category}
           onChange={handleCategoryChange}
         >
+          {/* {masterData.map(item => (
+            <option value={item.groupName}>{item.groupName}</option>
+          ))} */}
           <option value="">{t.SEARCH.FILTER_ALL}</option>
           <option value="technology">{t.SEARCH.FILTER_TECHNOLOGY}</option>
           <option value="business">{t.SEARCH.FILTER_BUSINESS}</option>

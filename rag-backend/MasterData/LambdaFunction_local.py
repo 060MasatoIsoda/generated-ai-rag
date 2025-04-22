@@ -46,8 +46,9 @@ if os.environ.get('DEBUG') == 'True':
     print(f"ALLOW_ORIGINS: {ALLOW_ORIGINS}")
     print(f"TABLE_NAME: {TABLE_NAME}")
 
-cors_config = CORSConfig(allow_origin=CORSConfig.ALLOW_ALL_ORIGINS)
-app = APIGatewayRestResolver()
+# CORSの設定
+cors_config = CORSConfig(allow_origin=ALLOW_ORIGINS)
+app = APIGatewayRestResolver(cors=cors_config)
 dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
 tracer = Tracer()
 
@@ -55,16 +56,46 @@ def fetch_dynamodb_data(query: str) -> List[Dict[str, Any]]:
     """
     DynamoDBからデータを取得する関数.
     """
-    table = dynamodb.Table(TABLE_NAME)
-    res = boto3.dynamodb.conditions.Key('group_name').eq(query)
-    try :
-        response = table.query(KeyConditionExpression=res)
+    print(f"Fetching data for query: {query}")
+    # ローカルテストでDynamoDBがない場合にモックデータを返す
+    if os.environ.get('DEBUG') == 'True' and not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+        print("Using mock data for local testing")
+        # モックデータの例
+        return [
+            {
+                "id": "1",
+                "group_name": query,
+                "title": f"Sample Result 1 for {query}",
+                "content": "This is a sample content for testing.",
+                "score": 0.95,
+                "url": "https://example.com/doc1"
+            },
+            {
+                "id": "2",
+                "group_name": query,
+                "title": f"Sample Result 2 for {query}",
+                "content": "Another sample content for local testing.",
+                "score": 0.85,
+                "url": "https://example.com/doc2"
+            }
+        ]
+
+    # 実際のDynamoDB操作
+    try:
+        table = dynamodb.Table(TABLE_NAME)
+        key_condition = boto3.dynamodb.conditions.Key('group_name').eq(query)
+        response = table.query(KeyConditionExpression=key_condition)
+        items = response.get('Items', [])
+        print(f"Found {len(items)} items in DynamoDB")
+        return items
     except ClientError as e:
         error_msg = f"Error fetching data from DynamoDB: {e}"
-        # Lambdaではない環境ではloggerがimportできない可能性があるためprint
         print(error_msg)
         raise InternalServerError(error_msg)
-    return response.get('Items', [])
+    except Exception as e:
+        error_msg = f"Unexpected error: {e}"
+        print(error_msg)
+        raise InternalServerError(error_msg)
 
 def create_response(data: List[Dict[str, Any]]) -> dict:
     """
@@ -73,19 +104,34 @@ def create_response(data: List[Dict[str, Any]]) -> dict:
     return Response(
         status_code = HTTPStatus.OK,
         content_type = content_types.APPLICATION_JSON,
-        body = json.dumps(data)
+        body = json.dumps({
+            "results": data,
+            "total": len(data),
+            "query": data[0]["group_name"] if data else ""
+        })
     )
 
 @app.get('/masterdata/sections-categories')
 @tracer.capture_method
-def search_dynamodb(query: str) -> List[Dict[str, Any]]:
+def search_dynamodb():
     """
     DynamoDBからデータを検索する関数.
     """
+    # クエリパラメータを取得
+    query_params = app.current_event.query_string_parameters or {}
+    query = query_params.get('query', '')
+
+    if not query:
+        print("No query parameter provided")
+        return create_response([])
+
+    print(f"Searching with query: {query}")
     claims = app.current_event.request_context.authorizer.get('claims', {})
     dynamodb_data = fetch_dynamodb_data(query)
+
     if not dynamodb_data:
         return create_response([])
+
     return create_response(dynamodb_data)
 
 @tracer.capture_lambda_handler
@@ -100,7 +146,8 @@ def lambda_handler(event, context: LambdaContext) -> dict:
     Returns:
         dict: レスポンス
     """
-    print('Event of lambda_handler', event)
+    if os.environ.get('DEBUG') == 'True':
+        print('Event of lambda_handler:', json.dumps(event, indent=2))
     return app.resolve(event, context)
 
 # ローカルでテスト実行する場合のエントリーポイント
@@ -113,10 +160,17 @@ if __name__ == "__main__":
         "queryStringParameters": {
             "query": "test_query"
         },
+        "multiValueQueryStringParameters": {
+            "query": ["test_query"]
+        },
+        "pathParameters": None,
         "requestContext": {
             "authorizer": {
                 "claims": {}
-            }
+            },
+            "path": "/masterdata/sections-categories",
+            "resourcePath": "/masterdata/sections-categories",
+            "httpMethod": "GET"
         }
     }
 

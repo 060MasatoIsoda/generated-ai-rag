@@ -1,42 +1,81 @@
 import { useState } from "react";
-import { SearchResult } from "../../services/api";
+import { SearchResult, SearchPayload } from "../../types/Search";
 import SearchForm from "./SearchForm";
 import SearchResults from "./SearchResults";
 import SearchFilter, { FilterOptions } from "./SearchFilter";
 import { useLanguage } from "../../contexts/LanguageContext";
 import PageLayout from "../common/Layout";
 import "./Search.css";
+import { fetchMasterData, searchDocuments } from "../../services/api";
+import { useEffect } from "react";
+import { MasterDataItem } from "../../types/Search";
 
 function Search() {
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchResult>({
+    category_name: "",
+    documents: [],
+    section_name: "",
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalResults, setTotalResults] = useState(0);
   const [filters, setFilters] = useState<FilterOptions>({});
+  const [masterData, setMasterData] = useState<MasterDataItem[]>([]);
+  const [updateCount, setUpdateCount] = useState(0);
 
-  const handleSearchResults = (
-    searchResults: SearchResult[],
-    total: number
-  ) => {
-    setResults(searchResults);
-    setTotalResults(total);
-    setError(null);
-    setLoading(false);
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetchMasterData();
+        setMasterData(response);
+      } catch (error) {
+        console.error("マスターデータの取得に失敗しました:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
-  const handleSearchError = (errorMessage: string) => {
-    setError(errorMessage);
-    setResults([]);
-    setTotalResults(0);
-    setLoading(false);
-  };
+  useEffect(() => {
+    // 最初の初期値（空オブジェクト）もカウントしたくない場合はガード
+    // if (results.documents.length === 0 && updateCount === 0) return;
 
-  // 検索中の状態を設定
-  const handleSearchStart = (searchQuery: string) => {
-    setQuery(searchQuery);
+    setUpdateCount((prev) => prev + 1);
+    console.log("🔁 resultsが更新されました:");
+    console.log("✅ 更新回数:", updateCount + 1);
+    console.log("📦 新しいresultsの中身:", results);
+  }, [results]);
+
+  // 検索実行関数を追加（SearchFormから移動）
+  const handleSearch = async (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
+
     setLoading(true);
+    setQuery(searchQuery);
+
+    const searchPayload: SearchPayload = {
+      search_text: searchQuery,
+      search_target: [],
+    };
+
+    try {
+      const data = await searchDocuments(searchPayload);
+      setResults(data.results[0]); // APIから返ってくる結果の構造に合わせて調整
+      setTotalResults(data.total);
+      setError(null);
+    } catch (err) {
+      console.error('検索中にエラーが発生しました:', err);
+      setError(t.SEARCH.ERROR);
+      setResults({
+        category_name: "",
+        documents: [],
+        section_name: "",
+      });
+      setTotalResults(0);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // フィルター変更ハンドラ
@@ -55,14 +94,13 @@ function Search() {
 
         <div className="search-page-layout">
           <div className="search-sidebar">
-            <SearchFilter onFilterChange={handleFilterChange} />
+            <SearchFilter onFilterChange={handleFilterChange} masterData={masterData} />
           </div>
 
           <div className="search-main">
             <SearchForm
-              onSearchResults={handleSearchResults}
-              onSearchError={handleSearchError}
-              onSearchStart={handleSearchStart}
+              onSearch={handleSearch}
+              loading={loading}
             />
 
             <SearchResults
