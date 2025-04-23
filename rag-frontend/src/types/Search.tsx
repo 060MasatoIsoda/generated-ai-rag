@@ -51,6 +51,7 @@ export interface SearchResult {
   category_name: string;
   documents: Document[];
   section_name: string;
+  highest_score_text: string;
 }
 
 export type SearchPayload = {

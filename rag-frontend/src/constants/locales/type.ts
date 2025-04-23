@@ -19,6 +19,10 @@ export type Locale = {
     BUTTON_LOADING: string;
     RESULTS: string;
     NO_RESULTS: string;
+    ANSWER: string;
+    HIGHEST_SCORE_ANSWER: string;
+    ALL_RESULTS: string;
+    SCORE: string;
     VIEW_SOURCE: string;
     RELEVANCE: string;
     ERROR: string;
