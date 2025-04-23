@@ -6,9 +6,8 @@ import SearchFilter, { FilterOptions } from "./SearchFilter";
 import { useLanguage } from "../../contexts/LanguageContext";
 import PageLayout from "../common/Layout";
 import "./Search.css";
-import { fetchMasterData, searchDocuments } from "../../services/api";
-import { useEffect } from "react";
-import { MasterDataItem } from "../../types/Search";
+import { searchDocuments } from "../../services/api";
+
 
 function Search() {
   const { t } = useLanguage();
@@ -23,30 +22,8 @@ function Search() {
   const [error, setError] = useState<string | null>(null);
   const [totalResults, setTotalResults] = useState(0);
   // const [filters, setFilters] = useState<FilterOptions>({});
-  const [masterData, setMasterData] = useState<MasterDataItem[]>([]);
-  const [updateCount, setUpdateCount] = useState(0);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetchMasterData();
-        setMasterData(response);
-      } catch (error) {
-        console.error("マスターデータの取得に失敗しました:", error);
-      }
-    };
-    fetchData();
-  }, []);
 
-  useEffect(() => {
-    // 最初の初期値（空オブジェクト）もカウントしたくない場合はガード
-    // if (results.documents.length === 0 && updateCount === 0) return;
-
-    setUpdateCount((prev) => prev + 1);
-    console.log("🔁 resultsが更新されました:");
-    console.log("✅ 更新回数:", updateCount + 1);
-    console.log("📦 新しいresultsの中身:", results);
-  }, [results]);
 
   // 検索実行関数を追加（SearchFormから移動）
   const handleSearch = async (searchQuery: string) => {
@@ -96,7 +73,7 @@ function Search() {
 
         <div className="search-page-layout">
           <div className="search-sidebar">
-            <SearchFilter onFilterChange={handleFilterChange} masterData={masterData} />
+            <SearchFilter onFilterChange={handleFilterChange} />
           </div>
 
           <div className="search-main">

@@ -1,9 +1,7 @@
 export type MasterDataItem = {
   groupName: string;
-  createdAt: string;
   sectionName: string;
   categories: string[];
-  updatedAt: string;
 };
 
 // コンテンツの型定義
@@ -61,3 +59,11 @@ export type SearchPayload = {
     category: string[];
   }[];
 };
+
+
+export type MasterDataResponse = {
+  query: string;
+  results: MasterDataItem[];
+  total: number;
+};
+

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import './SearchFilter.css'
 import { MasterDataItem } from '../../types/Search'
+import { fetchMasterData } from '../../services/api'
+
 // カテゴリとサブカテゴリの定義
 interface CategoryData {
   [key: string]: string[];
@@ -18,6 +20,7 @@ const CATEGORY_MAP: CategoryData = {
 export interface FilterOptions {
   category?: string;
   subcategories?: string[];
+  selectedSubcategories?: string[];
   dateRange?: {
     from: string;
     to: string;
@@ -28,15 +31,32 @@ export interface FilterOptions {
 
 interface SearchFilterProps {
   onFilterChange: (filters: FilterOptions) => void;
-  masterData: MasterDataItem[];
 }
 
-const SearchFilter = ({ onFilterChange, masterData }: SearchFilterProps) => {
+const SearchFilter = ({ onFilterChange }: SearchFilterProps) => {
   const { t } = useLanguage()
   // const [selectedCategory, setSelectedCategory] = useState<string>('')
   // const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([])
   // const [categoryList, setCategoryList] = useState<string[]>([])
   // const [groupNameList, setGroupNameList] = useState<string[]>([])
+
+  const [masterData, setMasterData] = useState<MasterDataItem[]>([]);
+  const [groupNameList, setGroupNameList] = useState<string[]>([]);
+  const [categoryList, setCategoryList] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetchMasterData();
+        setMasterData(response.results);
+        const uniqueGroupNames = [...new Set(response.results.map((item: MasterDataItem) => item.groupName))];
+        setGroupNameList(uniqueGroupNames as string[]);
+      } catch (error) {
+        console.error("マスターデータの取得に失敗しました:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   // フィルター状態の初期化
   const [filters, setFilters] = useState<FilterOptions>({
@@ -71,28 +91,40 @@ const SearchFilter = ({ onFilterChange, masterData }: SearchFilterProps) => {
 
   // カテゴリ変更ハンドラー
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedGroupName = e.target.value;
+    
+    // 選択されたgroupNameに対応するすべてのカテゴリを取得
+    const categoriesForSelectedGroup = masterData
+      .filter(item => item.groupName === selectedGroupName)
+      .flatMap(item => item.categories);
+    
+    // 重複を取り除く
+    const uniqueCategories = [...new Set(categoriesForSelectedGroup)];
+    
     const newFilters = {
       ...filters,
-      category: e.target.value
-    }
-    setFilters(newFilters)
-    onFilterChange(newFilters)
-  }
+      category: selectedGroupName,
+      subcategories: uniqueCategories // 選択されたグループに関連するカテゴリをセット
+    };
+    
+    setFilters(newFilters);
+    onFilterChange(newFilters);
+  };
 
   // サブカテゴリ変更ハンドラー
   const handleSubcategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
-    let newSubcategories: string[] = [...(filters.subcategories || [])];
+    let newSelectedSubcategories: string[] = [...(filters.selectedSubcategories || [])];
 
     if (checked) {
-      newSubcategories.push(value);
+      newSelectedSubcategories.push(value);
     } else {
-      newSubcategories = newSubcategories.filter(cat => cat !== value);
+      newSelectedSubcategories = newSelectedSubcategories.filter(cat => cat !== value);
     }
 
     const newFilters = {
       ...filters,
-      subcategories: newSubcategories
+      selectedSubcategories: newSelectedSubcategories
     };
 
     setFilters(newFilters);
@@ -184,33 +216,31 @@ const SearchFilter = ({ onFilterChange, masterData }: SearchFilterProps) => {
           value={filters.category}
           onChange={handleCategoryChange}
         >
-          {/* {masterData.map(item => (
-            <option value={item.groupName}>{item.groupName}</option>
-          ))} */}
           <option value="">{t.SEARCH.FILTER_ALL}</option>
-          <option value="technology">{t.SEARCH.FILTER_TECHNOLOGY}</option>
-          <option value="business">{t.SEARCH.FILTER_BUSINESS}</option>
-          <option value="science">{t.SEARCH.FILTER_SCIENCE}</option>
-          <option value="health">{t.SEARCH.FILTER_HEALTH}</option>
+          {groupNameList.map(groupName => (
+            <option key={groupName} value={groupName}>
+              {groupName}
+            </option>
+          ))}
         </select>
       </div>
 
       {/* サブカテゴリフィルター - カテゴリが選択されている場合のみ表示 */}
-      {filters.category && availableSubcategories.length > 0 && (
+      {filters.category && filters.subcategories && filters.subcategories.length > 0 && (
         <div className="filter-group">
           <label>{t.SEARCH.FILTER_SUBCATEGORY}:</label>
           <div className="checkbox-group">
-            {availableSubcategories.map(subcategory => (
-              <div key={subcategory}>
+            {filters.subcategories.map(category => (
+              <div key={category}>
                 <input
                   type="checkbox"
-                  id={`subcategory-${subcategory}`}
-                  value={subcategory}
-                  checked={filters.subcategories?.includes(subcategory) || false}
+                  id={`subcategory-${category}`}
+                  value={category}
+                  checked={filters.selectedSubcategories?.includes(category) || false}
                   onChange={handleSubcategoryChange}
                 />
-                <label htmlFor={`subcategory-${subcategory}`}>
-                  {getSubcategoryName(filters.category || '', subcategory)}
+                <label htmlFor={`subcategory-${category}`}>
+                  {category}
                 </label>
               </div>
             ))}
