@@ -42,6 +42,22 @@ function PageLayout({ title, children }: PageLayoutProps) {
             >
               <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>{title}</Link>
             </Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                color="inherit"
+                component={Link}
+                to="/search"
+              >
+                {t.COMMON.SEARCH}
+              </Button>
+              <Button
+                color="inherit"
+                component={Link}
+                to="/categories"
+              >
+                {t.COMMON.CATEGORY_MANAGEMENT}
+              </Button>
+            </Box>
             <Box marginLeft={"auto"}>
               <Button
                 color="inherit"

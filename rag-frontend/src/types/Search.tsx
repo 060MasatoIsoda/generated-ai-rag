@@ -1,5 +1,6 @@
 export type MasterDataItem = {
-  groupName: string;
+  id: string;
+  updated_at: string;
   sectionName: string;
   categories: string[];
 };
@@ -57,7 +58,7 @@ export type SearchPayload = {
   search_target: {
     section_name: string;
     category: string[];
-  }[];
+  };
 };
 
 
@@ -66,4 +67,3 @@ export type MasterDataResponse = {
   results: MasterDataItem[];
   total: number;
 };
-

@@ -28,12 +28,14 @@ const SearchResults = ({ results, totalResults, query, loading, error }: SearchR
             {results.documents.length > 0 && (
               <div className="all-results">
                 <h3>{t.SEARCH.ALL_RESULTS}</h3>
-                {results.documents.map((result, index) => (
-                  <li key={result.score} className="result-item">
-                    <h3>{t.SEARCH.ANSWER} {index + 1} ({t.SEARCH.SCORE}: {result.score.toFixed(4)})</h3>
-                    <p>{result.content.text}</p>
-                  </li>
-                ))}
+                {results.documents.map((result, index) =>
+                  result.score ? (
+                    <li key={index} className="result-item">
+                      <h3>{t.SEARCH.ANSWER} {index + 1} ({t.SEARCH.SCORE}: {result.score.toFixed(4)})</h3>
+                      <p>{result.content.text}</p>
+                    </li>
+                  ) : null
+                )}
               </div>
             )}
           </ul>

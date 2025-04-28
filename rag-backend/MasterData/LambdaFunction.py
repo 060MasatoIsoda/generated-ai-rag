@@ -26,19 +26,17 @@ app = APIGatewayRestResolver(cors=cors_config)
 dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
 tracer = Tracer()
 
-def fetch_dynamodb_data(query: str) -> List[Dict[str, Any]]:
+
+def fetch_dynamodb_data() -> List[Dict[str, Any]]:
     """
     DynamoDBからデータを取得する関数.
     """
-    print(f"Fetching data for query: {query}")
 
     # 実際のDynamoDB操作
     try:
         table = dynamodb.Table(TABLE_NAME)
         response = table.scan(Limit=100)
         logger.info(response)
-        # key_condition = boto3.dynamodb.conditions.Key('group_name').eq(query)
-        # response = table.query(KeyConditionExpression=key_condition)
         items = response.get('Items', [])
         print(f"Found {len(items)} items in DynamoDB")
         return items
@@ -51,17 +49,95 @@ def fetch_dynamodb_data(query: str) -> List[Dict[str, Any]]:
         print(error_msg)
         raise InternalServerError(error_msg)
 
-def create_response(data: List[Dict[str, Any]]) -> dict:
+
+def create_get_response(data: List[Dict[str, Any]]) -> dict:
     """
     レスポンスを作成する関数.
+    """
+    return Response(
+        status_code=HTTPStatus.OK,
+        content_type=content_types.APPLICATION_JSON,
+        body=json.dumps({
+            "results": data,
+            "total": len(data)
+        })
+    )
+
+def numbering_id(sections: dict) -> dict:
+    """
+    セクションデータのidを数値に変換する関数.
+    """
+    # 現在のデータを取得して最大IDを特定
+    existing_data = fetch_dynamodb_data()
+    existing_ids = [int(item['id']) for item in existing_data if 'id' in item and item['id'].isdigit()]
+    max_id = max(existing_ids) if existing_ids else 0
+
+    # 既存のIDのマップを作成（高速検索用）
+    existing_id_map = {item['id']: True for item in existing_data if 'id' in item}
+
+    for section in sections:
+        # IDが存在するかチェック
+        if 'id' not in section or not section['id'] or section['id'] not in existing_id_map:
+            # 新規データの場合、新しいIDを採番
+            max_id += 1
+            section['id'] = str(max_id)
+    return sections
+
+def formatting_section_data(sections: dict) -> dict:
+    """
+    セクションデータをフォーマットする関数.
+    id: string;
+    sectionName: string;
+    categories: Category[];
+    """
+    now = datetime.now()
+    formatted_sections = []
+    for section in sections:
+        id = section.get('id', '')
+        sectionName = section.get('sectionName', '')
+        categories = section.get('categories', [])
+        formatted_sections.append({
+            "id": id,
+            "updated_at": now.isoformat(),
+            "sectionName": sectionName,
+            "categories": categories
+        })
+
+    return formatted_sections
+
+
+def save_dynamodb_data(formatted_sections) -> None:
+    """
+    DynamoDBにデータを保存する関数.
+    既存のデータの場合はそのままidを採用し、新規の場合は最大ID+1を設定する
+    """
+    table = dynamodb.Table(TABLE_NAME)
+    for section in formatted_sections:
+        table.put_item(Item=section)
+
+
+def create_save_response(data) -> dict:
+    """
+    DynamoDBにデータを保存した後のレスポンスを作成する関数.
+    """
+    return Response(
+        status_code=HTTPStatus.OK,
+        content_type=content_types.APPLICATION_JSON,
+        body=json.dumps({
+            "total": len(data),
+            "message": "Data saved successfully"
+        })
+    )
+
+def create_non_response() -> dict:
+    """
+    DynamoDBにデータを保存した後のレスポンスを作成する関数.
     """
     return Response(
         status_code = HTTPStatus.OK,
         content_type = content_types.APPLICATION_JSON,
         body = json.dumps({
-            "results": data,
-            "total": len(data),
-            "query": data[0]["groupName"] if data else ""
+            "message": "No data to save"
         })
     )
 
@@ -71,22 +147,28 @@ def search_dynamodb():
     """
     DynamoDBからデータを検索する関数.
     """
-    # クエリパラメータを取得
-    query_params = app.current_event.query_string_parameters or {}
-    query = query_params.get('query', '')
-
-    if not query:
-        print("No query parameter provided")
-        return create_response([])
-
-    print(f"Searching with query: {query}")
-    claims = app.current_event.request_context.authorizer.get('claims', {})
-    dynamodb_data = fetch_dynamodb_data(query)
+    dynamodb_data = fetch_dynamodb_data()
 
     if not dynamodb_data:
-        return create_response([])
+        return create_get_response([])
 
-    return create_response(dynamodb_data)
+    return create_get_response(dynamodb_data)
+
+@app.post('/masterdata/sections-categories')
+@tracer.capture_method
+def save_categories():
+    """
+    DynamoDBにデータを保存する関数.
+    """
+    request_body: dict = app.current_event.json_body
+
+    sections = request_body.get('sections', [])
+    if sections:
+        numbered_sections = numbering_id(sections)
+        formatted_sections = formatting_section_data(numbered_sections)
+        save_dynamodb_data(formatted_sections)
+        return create_save_response(formatted_sections)
+    return create_non_response()
 
 @tracer.capture_lambda_handler
 def lambda_handler(event, context: LambdaContext) -> dict:

@@ -28,17 +28,39 @@ dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
 tracer = Tracer()
 bedrock_agent_runtime = boto3.client('bedrock-agent-runtime')
 
+def format_documents(documents: list) -> list:
+    """
+    ドキュメントを整形する関数.
+    """
+    formatted_documents = []
+    logger.info(f"Documents: {documents}")
+    for index, document in enumerate(documents):
+        formatted_documents.append({
+            "id": index,
+            'DocumentTitle': document['metadata'].get('x-amz-bedrock-kb-source-uri', '未指定'),
+            'DocumentPage': document['metadata'].get('x-amz-bedrock-kb-document-page-number', '未指定'),
+            'Content': document['content'].get('text', ''),
+            'Score': document['score'],
+        })
+    return formatted_documents
+
 def generate_retrieve_config(section_name: str, categories: list):
-    filters = []
-    if section_name:
-        filters['filter']= {'equals': {'key': 'section', 'value': section_name}}
-    if categories:
-        filters['filter'] = {
+    """
+    ベックロックにフィルター有りでデータを渡す設定を生成する関数.
+    """
+    filters = {}
+    if section_name and categories:
+                filters['filter'] = {
                 'andAll': [
                     {'equals': {'key': 'section', 'value': section_name}},
                     {'in': {'key': 'category', 'value': categories}},
                 ],
             }
+    elif categories:
+        filters['filter']= {'in': {'key': 'category', 'value': categories}}
+    elif section_name:
+        filters['filter']= {'equals': {'key': 'section', 'value': section_name}}
+
     return {
         'vectorSearchConfiguration': {
             'numberOfResults': 10,
@@ -48,16 +70,20 @@ def generate_retrieve_config(section_name: str, categories: list):
     }
 
 def generate_retrieval_config_without_filter():
-    filters = {}
+    """
+    ベックロックにフィルター無しでデータを渡す設定を生成する関数.
+    """
     return {
         'vectorSearchConfiguration': {
             'numberOfResults': 10,
-            'overrideSearchType': 'SEMANTIC',
-            **filters,
+            'overrideSearchType': 'SEMANTIC'
         },
     }
 
 def retrieve_documents_without_filter(search_text: str):
+    """
+    ベックロックからデータを取得する関数.
+    """
     retrieve_config = generate_retrieval_config_without_filter()
     return bedrock_agent_runtime.retrieve(
         knowledgeBaseId=KNOWLEDGEBASE_ID,
@@ -66,9 +92,9 @@ def retrieve_documents_without_filter(search_text: str):
     ).get('retrievalResults', [])
 
 
-def retrieve_documents(section_name: str, categories: list, search_text: str):
+def retrieve_documents(search_text: str, section_name: str, categories: list):
     """
-    DynamoDBからデータを取得する関数.
+    ベックロックからフィルター有りでデータを取得する関数.
     """
     retrieve_config = generate_retrieve_config(section_name, categories)
     return bedrock_agent_runtime.retrieve(
@@ -101,6 +127,7 @@ def create_response(data: List[Dict[str, Any]]) -> dict:
         })
     )
 
+
 @app.post('/knowledgebase/search')
 @tracer.capture_method
 def search_rag():
@@ -112,34 +139,52 @@ def search_rag():
     request_body: dict = app.current_event.json_body
 
     search_text = request_body.get('search_text', '')
-    # search_target = request_body.get('search_target', '')
-    search_target = ''
+    search_target = request_body.get('search_target', '')
+
 
     if search_target :
-        for target in search_target:
-            section_name = target.get('section_name', '')
-            categories = target.get('category', [])
-            documents = retrieve_documents(search_text, section_name, categories)
+        # search_targetが配列かどうかをチェック
+        if isinstance(search_target, list):
+            # 配列の場合、従来通りfor文で処理
+            for target in search_target:
+                section_name = target.get('section_name', '')
+                categories = target.get('category', [])
+                documents = retrieve_documents(search_text, section_name, categories)
+                formatted_documents = format_documents(documents)
+                # スコアが最も高いテキストを取得
+                highest_score_text = get_highest_score_text(documents)
 
+                retrieved_results.append({
+                    'section_name': section_name,
+                    'categories': categories,
+                    'documents': formatted_documents,
+                    'highest_score_text': highest_score_text
+                })
+        else:
+            # オブジェクトの場合、for文を使わずに処理
+            section_name = search_target.get('section_name', '')
+            categories = search_target.get('category', [])
+            documents = retrieve_documents(search_text, section_name, categories)
+            formatted_documents = format_documents(documents)
             # スコアが最も高いテキストを取得
             highest_score_text = get_highest_score_text(documents)
 
             retrieved_results.append({
                 'section_name': section_name,
                 'categories': categories,
-                'documents': documents,
+                'documents': formatted_documents,
                 'highest_score_text': highest_score_text
             })
     else:
         documents = retrieve_documents_without_filter(search_text)
-
+        formatted_documents = format_documents(documents)
         # スコアが最も高いテキストを取得
         highest_score_text = get_highest_score_text(documents)
 
         retrieved_results.append({
             'section_name': '',
             'category_name': '',
-            'documents': documents,
+            'documents': formatted_documents,
             'highest_score_text': highest_score_text
         })
     logger.info(f"Retrieved results: {retrieved_results}")

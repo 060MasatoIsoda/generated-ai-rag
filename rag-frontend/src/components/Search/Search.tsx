@@ -21,7 +21,7 @@ function Search() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalResults, setTotalResults] = useState(0);
-  // const [filters, setFilters] = useState<FilterOptions>({});
+  const [filters, setFilters] = useState<FilterOptions>({});
 
 
 
@@ -34,7 +34,10 @@ function Search() {
 
     const searchPayload: SearchPayload = {
       search_text: searchQuery,
-      search_target: [],
+      search_target: {
+        section_name: filters.category || "",
+        category: filters.subcategories || [],
+      },
     };
 
     try {
@@ -59,7 +62,7 @@ function Search() {
 
   // フィルター変更ハンドラ
   const handleFilterChange = (newFilters: FilterOptions) => {
-    // setFilters(newFilters);
+    setFilters(newFilters);
     // TODO: 既存の検索結果にフィルターを適用するロジックを追加
     console.log("Applied filters:", newFilters);
   };

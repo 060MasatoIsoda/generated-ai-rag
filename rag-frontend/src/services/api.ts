@@ -1,5 +1,7 @@
 import axios from "axios";
 import { SearchPayload } from "../types/Search";
+import { Section } from "../types/CategoryManagement";
+
 // APIのベースURLを設定
 // 開発環境と本番環境で異なる場合は環境変数などで切り替えることができます
 const API_BASE_URL =
@@ -39,7 +41,21 @@ export const fetchMasterData = async () => {
   }
 };
 
+export const saveCategories = async (sections: Section[]) => {
+  try {
+    const response = await apiClient.post(
+      "/masterdata/save-categories",
+      sections
+    );
+    return response.data;
+  } catch (error) {
+    console.error("APIリクエストエラー:", error);
+    throw error;
+  }
+};
+
 export default {
   searchDocuments,
   fetchMasterData,
+  saveCategories,
 };
