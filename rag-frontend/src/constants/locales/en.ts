@@ -119,6 +119,7 @@ export const en = {
   },
   DOCUMENT_UPLOAD: {
     TITLE: "Document Upload",
+    DESCRIPTION: "Upload documents to the system",
     SECTION: "Section",
     CATEGORY: "Category",
     SELECT_SECTION: "Please select a section",

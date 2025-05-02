@@ -24,7 +24,9 @@ const SectionSelector = ({
 }: SectionSelectorProps) => {
   return (
     <FormControl fullWidth error={error}>
-      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{labels.section}</label>
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        {labels.section}
+      </label>
       <Select
         labelId="section-select-label"
         id="section-select"

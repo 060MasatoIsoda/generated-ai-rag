@@ -119,6 +119,7 @@ export const ja = {
   },
   DOCUMENT_UPLOAD: {
     TITLE: "データソース保存",
+    DESCRIPTION: "ファイルをアップロードして保存します",
     SECTION: "セクション",
     CATEGORY: "カテゴリ",
     SELECT_SECTION: "セクションを選択してください",

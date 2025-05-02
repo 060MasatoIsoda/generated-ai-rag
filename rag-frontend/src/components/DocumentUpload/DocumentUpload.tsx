@@ -6,12 +6,24 @@ import {
   SelectChangeEvent,
   Grid,
   Paper,
+  Container,
+  Box,
+  CardContent,
 } from "@mui/material";
-import { fetchMasterData, getPresignedUrl, uploadFileToS3 } from "../../services/api";
+import {
+  fetchMasterData,
+  getPresignedUrl,
+  uploadFileToS3,
+} from "../../services/api";
 import { Section } from "../../types/CategoryManagement";
 import { UploadFile, DocumentUploadFormData } from "../../types/DocumentUpload";
 import { MasterDataItem } from "../../types/CategoryManagement";
-
+import {
+  CloudUpload as UploadIcon,
+  Description as FileIcon,
+  Storage as DatabaseIcon,
+  FolderOpen as FolderIcon,
+} from "@mui/icons-material";
 // Components
 import SectionSelector from "./SectionSelector";
 import CategorySelector from "./CategorySelector";
@@ -58,14 +70,18 @@ const DocumentUpload = () => {
       try {
         setLoading(true);
         const response = await fetchMasterData();
-        const convertedSections = response.results.map((item: MasterDataItem) => ({
-          id: item.id,
-          sectionName: item.sectionName,
-          categories: item.categories.map((category: string, index: number) => ({
-            id: `${item.id}-${index}`,
-            categoryName: category,
-          })),
-        }));
+        const convertedSections = response.results.map(
+          (item: MasterDataItem) => ({
+            id: item.id,
+            sectionName: item.sectionName,
+            categories: item.categories.map(
+              (category: string, index: number) => ({
+                id: `${item.id}-${index}`,
+                categoryName: category,
+              })
+            ),
+          })
+        );
         setSections(convertedSections);
         setLoading(false);
       } catch (error) {
@@ -79,7 +95,8 @@ const DocumentUpload = () => {
   // セクション選択ハンドラ
   const handleSectionChange = (event: SelectChangeEvent<string>) => {
     const sectionId = event.target.value;
-    const selectedSection = sections.find((section) => section.id === sectionId) || null;
+    const selectedSection =
+      sections.find((section) => section.id === sectionId) || null;
 
     setFormData({
       ...formData,
@@ -98,9 +115,10 @@ const DocumentUpload = () => {
     if (!formData.selectedSection) return;
 
     const categoryId = event.target.value;
-    const selectedCategory = formData.selectedSection.categories.find(
-      (category) => category.id === categoryId
-    ) || null;
+    const selectedCategory =
+      formData.selectedSection.categories.find(
+        (category) => category.id === categoryId
+      ) || null;
 
     setFormData({
       ...formData,
@@ -140,7 +158,7 @@ const DocumentUpload = () => {
       });
 
       // 無効なファイルにエラーステータスを設定
-      invalidFiles.forEach(file => {
+      invalidFiles.forEach((file) => {
         file.status = "error";
         file.error = t.DOCUMENT_UPLOAD.INVALID_FILE_FORMAT;
       });
@@ -172,26 +190,37 @@ const DocumentUpload = () => {
   };
 
   // 進捗更新ハンドラ
-  const updateFileProgress = useCallback((index: number, progress: number, status: UploadFile['status'], error?: string) => {
-    setFormData((prevData) => {
-      const updatedFiles = [...prevData.files];
-      updatedFiles[index] = {
-        ...updatedFiles[index],
-        progress,
-        status,
-        error,
-      };
-      return {
-        ...prevData,
-        files: updatedFiles,
-      };
-    });
-  }, []);
+  const updateFileProgress = useCallback(
+    (
+      index: number,
+      progress: number,
+      status: UploadFile["status"],
+      error?: string
+    ) => {
+      setFormData((prevData) => {
+        const updatedFiles = [...prevData.files];
+        updatedFiles[index] = {
+          ...updatedFiles[index],
+          progress,
+          status,
+          error,
+        };
+        return {
+          ...prevData,
+          files: updatedFiles,
+        };
+      });
+    },
+    []
+  );
 
   // ファイルアップロード処理
   const uploadFile = async (file: UploadFile, index: number) => {
     if (!formData.selectedSection || !formData.selectedCategory) {
-      return { success: false, error: "セクションとカテゴリを選択してください" };
+      return {
+        success: false,
+        error: "セクションとカテゴリを選択してください",
+      };
     }
 
     try {
@@ -206,17 +235,18 @@ const DocumentUpload = () => {
       );
 
       // S3へのアップロード
-      await uploadFileToS3(
-        presignedData.uploadUrl,
-        file.file,
-        (progress) => updateFileProgress(index, progress, "uploading")
+      await uploadFileToS3(presignedData.uploadUrl, file.file, (progress) =>
+        updateFileProgress(index, progress, "uploading")
       );
 
       // アップロード完了
       updateFileProgress(index, 100, "success");
       return { success: true, fileKey: presignedData.fileKey };
     } catch (error) {
-      console.error(`ファイル「${file.name}」のアップロードに失敗しました:`, error);
+      console.error(
+        `ファイル「${file.name}」のアップロードに失敗しました:`,
+        error
+      );
       updateFileProgress(index, 0, "error", t.DOCUMENT_UPLOAD.UPLOAD_ERROR);
       return { success: false, error };
     }
@@ -228,7 +258,9 @@ const DocumentUpload = () => {
     const newErrors = {
       section: !formData.selectedSection,
       category: !formData.selectedCategory,
-      files: formData.files.length === 0 || formData.files.every(f => f.status === "error"),
+      files:
+        formData.files.length === 0 ||
+        formData.files.every((f) => f.status === "error"),
     };
 
     setErrors(newErrors);
@@ -273,9 +305,13 @@ const DocumentUpload = () => {
 
       setSnackbar({
         open: true,
-        message: successCount === pendingFiles.length
-          ? t.DOCUMENT_UPLOAD.UPLOAD_SUCCESS
-          : t.DOCUMENT_UPLOAD.UPLOAD_PARTIAL_SUCCESS.replace('{success}', successCount.toString()).replace('{total}', pendingFiles.length.toString()),
+        message:
+          successCount === pendingFiles.length
+            ? t.DOCUMENT_UPLOAD.UPLOAD_SUCCESS
+            : t.DOCUMENT_UPLOAD.UPLOAD_PARTIAL_SUCCESS.replace(
+                "{success}",
+                successCount.toString()
+              ).replace("{total}", pendingFiles.length.toString()),
         severity: successCount === pendingFiles.length ? "success" : "error",
       });
 
@@ -301,87 +337,108 @@ const DocumentUpload = () => {
 
   return (
     <PageLayout title={t.DOCUMENT_UPLOAD.TITLE}>
-      <Typography variant="h4" gutterBottom>
-        {t.DOCUMENT_UPLOAD.TITLE}
-      </Typography>
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={3}>
-          {/* セクション選択 */}
-          <Grid sx={{ gridColumn: 'span 12' }}>
-            <SectionSelector
-              sections={sections}
-              selectedSectionId={formData.selectedSection?.id || ""}
-              onChange={handleSectionChange}
-              error={errors.section}
-              disabled={loading}
-              labels={{
-                section: t.DOCUMENT_UPLOAD.SECTION,
-                selectSection: t.DOCUMENT_UPLOAD.SELECT_SECTION
-              }}
-            />
-          </Grid>
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Paper
+          elevation={3}
+          sx={{ p: 3, mx: "auto", mb: 4, maxWidth: "800px", borderRadius: 2 }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
+            }}
+          >
+            <DatabaseIcon color="primary" />
+            <Typography
+              variant="h4"
+              component="h1"
+              gutterBottom={false}
+              fontWeight="bold"
+            >
+              {t.DOCUMENT_UPLOAD.TITLE}
+            </Typography>
+          </Box>
+          <Typography variant="subtitle1" color="text.secondary">
+            {t.DOCUMENT_UPLOAD.DESCRIPTION}
+          </Typography>
+          <CardContent sx={{ p: 4 }}>
+            <Grid container spacing={3}>
+              {/* セクション選択 */}
+              <Grid size={6}>
+                <SectionSelector
+                  sections={sections}
+                  selectedSectionId={formData.selectedSection?.id || ""}
+                  onChange={handleSectionChange}
+                  error={errors.section}
+                  disabled={loading}
+                  labels={{
+                    section: t.DOCUMENT_UPLOAD.SECTION,
+                    selectSection: t.DOCUMENT_UPLOAD.SELECT_SECTION,
+                  }}
+                />
+              </Grid>
 
-          {/* カテゴリ選択 */}
-          <Grid sx={{ gridColumn: 'span 12' }}>
-            <CategorySelector
-              categories={formData.selectedSection?.categories || []}
-              selectedCategoryId={formData.selectedCategory?.id || ""}
-              onChange={handleCategoryChange}
-              error={errors.category}
-              disabled={!formData.selectedSection || loading}
-              labels={{
-                category: t.DOCUMENT_UPLOAD.CATEGORY,
-                selectCategory: t.DOCUMENT_UPLOAD.SELECT_CATEGORY
-              }}
-            />
-          </Grid>
+              {/* カテゴリ選択 */}
+              <Grid size={6}>
+                <CategorySelector
+                  categories={formData.selectedSection?.categories || []}
+                  selectedCategoryId={formData.selectedCategory?.id || ""}
+                  onChange={handleCategoryChange}
+                  error={errors.category}
+                  disabled={!formData.selectedSection || loading}
+                  labels={{
+                    category: t.DOCUMENT_UPLOAD.CATEGORY,
+                    selectCategory: t.DOCUMENT_UPLOAD.SELECT_CATEGORY,
+                  }}
+                />
+              </Grid>
 
-          {/* ファイルアップロード */}
-          <Grid sx={{ gridColumn: 'span 12' }}>
-            <FileUploadArea
-              onFileChange={handleFileChange}
-              disabled={loading}
-              hasError={errors.files}
-              labels={{
-                selectFiles: t.DOCUMENT_UPLOAD.SELECT_FILES,
-                supportedFormats: t.DOCUMENT_UPLOAD.SUPPORTED_FORMATS,
-                noFilesSelected: t.DOCUMENT_UPLOAD.NO_FILES_SELECTED
-              }}
-            />
-          </Grid>
+              {/* ファイルアップロード */}
+              <Grid size={12}>
+                <FileUploadArea
+                  onFileChange={handleFileChange}
+                  disabled={loading}
+                  hasError={errors.files}
+                  labels={{
+                    selectFiles: t.DOCUMENT_UPLOAD.SELECT_FILES,
+                    supportedFormats: t.DOCUMENT_UPLOAD.SUPPORTED_FORMATS,
+                    noFilesSelected: t.DOCUMENT_UPLOAD.NO_FILES_SELECTED,
+                  }}
+                />
 
-          {/* ファイルリスト */}
-          <Grid sx={{ gridColumn: 'span 12' }}>
-            <FileList
-              files={formData.files}
-              onRemoveFile={handleRemoveFile}
-              loading={loading}
-              noFilesMessage={t.DOCUMENT_UPLOAD.NO_FILES_SELECTED}
-            />
-          </Grid>
+                {/* ファイルリスト */}
+                  <FileList
+                    files={formData.files}
+                    onRemoveFile={handleRemoveFile}
+                    loading={loading}
+                    noFilesMessage={t.DOCUMENT_UPLOAD.NO_FILES_SELECTED}
+                  />
 
-          {/* アップロードボタン */}
-          <Grid sx={{ gridColumn: 'span 12' }}>
-            <UploadButton
-              onClick={handleUpload}
-              loading={loading}
-              disabled={formData.files.length === 0}
-              labels={{
-                uploading: t.DOCUMENT_UPLOAD.UPLOADING,
-                upload: t.DOCUMENT_UPLOAD.UPLOAD
-              }}
-            />
-          </Grid>
-        </Grid>
-      </Paper>
+                {/* アップロードボタン */}
+                  <UploadButton
+                    onClick={handleUpload}
+                    loading={loading}
+                    disabled={formData.files.length === 0}
+                    labels={{
+                      uploading: t.DOCUMENT_UPLOAD.UPLOADING,
+                      upload: t.DOCUMENT_UPLOAD.UPLOAD,
+                    }}
+                  />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Paper>
 
-      {/* スナックバー通知 */}
-      <NotificationSnackbar
-        open={snackbar.open}
-        message={snackbar.message}
-        severity={snackbar.severity}
-        onClose={handleCloseSnackbar}
-      />
+        {/* スナックバー通知 */}
+        <NotificationSnackbar
+          open={snackbar.open}
+          message={snackbar.message}
+          severity={snackbar.severity}
+          onClose={handleCloseSnackbar}
+        />
+      </Container>
     </PageLayout>
   );
 };

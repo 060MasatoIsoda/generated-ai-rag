@@ -118,6 +118,7 @@ export type Locale = {
   };
   DOCUMENT_UPLOAD: {
     TITLE: string;
+    DESCRIPTION: string;
     SECTION: string;
     CATEGORY: string;
     SELECT_SECTION: string;
