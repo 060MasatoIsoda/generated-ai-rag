@@ -1,7 +1,7 @@
 import axios from "axios";
 import { SearchPayload } from "../types/Search";
 import { SavePayload } from "../types/CategoryManagement";
-import { UploadResponse, PresignedUrlResponse } from "../types/DocumentUpload";
+import { PresignedUrlResponse } from "../types/DocumentUpload";
 
 // APIのベースURLを設定
 // 開発環境と本番環境で異なる場合は環境変数などで切り替えることができます

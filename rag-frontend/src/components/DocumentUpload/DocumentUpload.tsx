@@ -2,38 +2,23 @@ import { useState, useEffect, useCallback } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import PageLayout from "../common/Layout";
 import {
-  Box,
-  Paper,
   Typography,
-  Button,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
-  Alert,
-  Snackbar,
-  FormHelperText,
-  LinearProgress,
   SelectChangeEvent,
+  Grid,
+  Paper,
 } from "@mui/material";
-import {
-  CloudUpload as CloudUploadIcon,
-  Description as DescriptionIcon,
-  Check as CheckIcon,
-  Error as ErrorIcon,
-  Delete as DeleteIcon,
-} from "@mui/icons-material";
 import { fetchMasterData, getPresignedUrl, uploadFileToS3 } from "../../services/api";
 import { Section } from "../../types/CategoryManagement";
 import { UploadFile, DocumentUploadFormData } from "../../types/DocumentUpload";
-import Grid from '@mui/material/Grid';
 import { MasterDataItem } from "../../types/CategoryManagement";
+
+// Components
+import SectionSelector from "./SectionSelector";
+import CategorySelector from "./CategorySelector";
+import FileUploadArea from "./FileUploadArea";
+import FileList from "./FileList";
+import UploadButton from "./UploadButton";
+import NotificationSnackbar from "./NotificationSnackbar";
 
 // 許可されるファイル拡張子
 const ALLOWED_FILE_TYPES = [
@@ -314,68 +299,6 @@ const DocumentUpload = () => {
     });
   };
 
-  // ファイルリストの表示
-  const renderFileList = () => {
-    if (formData.files.length === 0) {
-      return (
-        <Box sx={{ textAlign: "center", py: 4 }}>
-          <Typography variant="body2" color="text.secondary">
-            {t.DOCUMENT_UPLOAD.NO_FILES_SELECTED}
-          </Typography>
-        </Box>
-      );
-    }
-
-    return (
-      <List>
-        {formData.files.map((file, index) => (
-          <ListItem key={`${file.name}-${index}`} secondaryAction={
-            file.status !== "uploading" && (
-              <IconButton
-                edge="end"
-                onClick={() => handleRemoveFile(index)}
-                disabled={loading}
-              >
-                <DeleteIcon />
-              </IconButton>
-            )
-          }>
-            <ListItemIcon>
-              {file.status === "success" ? (
-                <CheckIcon color="success" />
-              ) : file.status === "error" ? (
-                <ErrorIcon color="error" />
-              ) : (
-                <DescriptionIcon />
-              )}
-            </ListItemIcon>
-            <ListItemText
-              primary={file.name}
-              secondary={
-                <>
-                  {file.error ? (
-                    <Typography variant="body2" color="error">
-                      {file.error}
-                    </Typography>
-                  ) : (
-                    `${(file.size / 1024).toFixed(2)} KB`
-                  )}
-                  {file.status === "uploading" && (
-                    <LinearProgress
-                      variant="determinate"
-                      value={file.progress}
-                      sx={{ mt: 1 }}
-                    />
-                  )}
-                </>
-              }
-            />
-          </ListItem>
-        ))}
-      </List>
-    );
-  };
-
   return (
     <PageLayout title={t.DOCUMENT_UPLOAD.TITLE}>
       <Typography variant="h4" gutterBottom>
@@ -385,143 +308,80 @@ const DocumentUpload = () => {
         <Grid container spacing={3}>
           {/* セクション選択 */}
           <Grid sx={{ gridColumn: 'span 12' }}>
-            <FormControl fullWidth error={errors.section}>
-              <InputLabel id="section-select-label">{t.DOCUMENT_UPLOAD.SECTION}</InputLabel>
-              <Select
-                labelId="section-select-label"
-                id="section-select"
-                value={formData.selectedSection?.id || ""}
-                label={t.DOCUMENT_UPLOAD.SECTION}
-                onChange={handleSectionChange}
-                disabled={loading}
-                displayEmpty
-              >
-                <MenuItem value="" disabled>
-                  {t.DOCUMENT_UPLOAD.SELECT_SECTION}
-                </MenuItem>
-                {sections.map((section) => (
-                  <MenuItem key={section.id} value={section.id}>
-                    {section.sectionName}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.section && (
-                <FormHelperText>{t.DOCUMENT_UPLOAD.SELECT_SECTION}</FormHelperText>
-              )}
-            </FormControl>
+            <SectionSelector
+              sections={sections}
+              selectedSectionId={formData.selectedSection?.id || ""}
+              onChange={handleSectionChange}
+              error={errors.section}
+              disabled={loading}
+              labels={{
+                section: t.DOCUMENT_UPLOAD.SECTION,
+                selectSection: t.DOCUMENT_UPLOAD.SELECT_SECTION
+              }}
+            />
           </Grid>
 
           {/* カテゴリ選択 */}
           <Grid sx={{ gridColumn: 'span 12' }}>
-            <FormControl
-              fullWidth
-              disabled={!formData.selectedSection || loading}
+            <CategorySelector
+              categories={formData.selectedSection?.categories || []}
+              selectedCategoryId={formData.selectedCategory?.id || ""}
+              onChange={handleCategoryChange}
               error={errors.category}
-            >
-              <InputLabel id="category-select-label">{t.DOCUMENT_UPLOAD.CATEGORY}</InputLabel>
-              <Select
-                labelId="category-select-label"
-                id="category-select"
-                value={formData.selectedCategory?.id || ""}
-                label={t.DOCUMENT_UPLOAD.CATEGORY}
-                onChange={handleCategoryChange}
-                displayEmpty
-              >
-                <MenuItem value="" disabled>
-                  {t.DOCUMENT_UPLOAD.SELECT_CATEGORY}
-                </MenuItem>
-                {formData.selectedSection?.categories.map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.categoryName}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.category && (
-                <FormHelperText>{t.DOCUMENT_UPLOAD.SELECT_CATEGORY}</FormHelperText>
-              )}
-            </FormControl>
+              disabled={!formData.selectedSection || loading}
+              labels={{
+                category: t.DOCUMENT_UPLOAD.CATEGORY,
+                selectCategory: t.DOCUMENT_UPLOAD.SELECT_CATEGORY
+              }}
+            />
           </Grid>
 
           {/* ファイルアップロード */}
           <Grid sx={{ gridColumn: 'span 12' }}>
-            <Box
-              sx={{
-                border: "1px dashed",
-                borderColor: errors.files ? "error.main" : "divider",
-                borderRadius: 1,
-                p: 3,
-                textAlign: "center",
+            <FileUploadArea
+              onFileChange={handleFileChange}
+              disabled={loading}
+              hasError={errors.files}
+              labels={{
+                selectFiles: t.DOCUMENT_UPLOAD.SELECT_FILES,
+                supportedFormats: t.DOCUMENT_UPLOAD.SUPPORTED_FORMATS,
+                noFilesSelected: t.DOCUMENT_UPLOAD.NO_FILES_SELECTED
               }}
-            >
-              <input
-                type="file"
-                id="file-upload"
-                multiple
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-                disabled={loading}
-              />
-              <label htmlFor="file-upload">
-                <Button
-                  component="span"
-                  variant="contained"
-                  startIcon={<CloudUploadIcon />}
-                  disabled={loading}
-                >
-                  {t.DOCUMENT_UPLOAD.SELECT_FILES}
-                </Button>
-              </label>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                {t.DOCUMENT_UPLOAD.SUPPORTED_FORMATS}
-              </Typography>
-              {errors.files && (
-                <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-                  {t.DOCUMENT_UPLOAD.NO_FILES_SELECTED}
-                </Typography>
-              )}
-            </Box>
+            />
           </Grid>
 
           {/* ファイルリスト */}
           <Grid sx={{ gridColumn: 'span 12' }}>
-            <Paper
-              variant="outlined"
-              sx={{ maxHeight: "300px", overflow: "auto" }}
-            >
-              {renderFileList()}
-            </Paper>
+            <FileList
+              files={formData.files}
+              onRemoveFile={handleRemoveFile}
+              loading={loading}
+              noFilesMessage={t.DOCUMENT_UPLOAD.NO_FILES_SELECTED}
+            />
           </Grid>
 
           {/* アップロードボタン */}
           <Grid sx={{ gridColumn: 'span 12' }}>
-            <Button
-              variant="contained"
-              color="primary"
+            <UploadButton
               onClick={handleUpload}
-              startIcon={loading ? <CircularProgress size={20} /> : undefined}
-              disabled={loading || formData.files.length === 0}
-              sx={{ mt: 2 }}
-            >
-              {loading ? t.DOCUMENT_UPLOAD.UPLOADING : t.DOCUMENT_UPLOAD.UPLOAD}
-            </Button>
+              loading={loading}
+              disabled={formData.files.length === 0}
+              labels={{
+                uploading: t.DOCUMENT_UPLOAD.UPLOADING,
+                upload: t.DOCUMENT_UPLOAD.UPLOAD
+              }}
+            />
           </Grid>
         </Grid>
       </Paper>
 
       {/* スナックバー通知 */}
-      <Snackbar
+      <NotificationSnackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        message={snackbar.message}
+        severity={snackbar.severity}
         onClose={handleCloseSnackbar}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      />
     </PageLayout>
   );
 };

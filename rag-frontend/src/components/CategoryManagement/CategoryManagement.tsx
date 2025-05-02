@@ -1,28 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import PageLayout from "../common/Layout";
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  TextField,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Snackbar,
-  Alert,
-} from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { Box, Grid, Snackbar, Alert } from "@mui/material";
 import { fetchMasterData, saveCategories } from "../../services/api";
 import {
   MasterDataItem,
@@ -31,6 +10,13 @@ import {
   SavePayload,
   MasterDataResponse,
 } from "../../types/CategoryManagement";
+
+import SectionList from "./SectionList";
+import CategoryList from "./CategoryList";
+import SectionDialog from "./SectionDialog";
+import CategoryDialog from "./CategoryDialog";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import CategorySaveButton from "./CategorySaveButton";
 
 // MasterDataItemからSectionへの変換関数
 const convertToSection = (item: MasterDataItem): Section => {
@@ -65,10 +51,9 @@ const CategoryManagement = () => {
     message: "",
     severity: "success" as "success" | "error",
   });
-  const [deleteType, setDeleteType] = useState<"section" | "category">(
-    "section"
-  );
+  const [deleteType, setDeleteType] = useState<"section" | "category">("section");
   const [isSaving, setIsSaving] = useState(false);
+
   const responseToSections = (response: MasterDataResponse) => {
     const convertedSections = response.results.map(convertToSection);
     setSections(convertedSections);
@@ -76,6 +61,7 @@ const CategoryManagement = () => {
       setSelectedSection(convertedSections[0]);
     }
   };
+
   const dummyData: Section[] = [
     {
       id: "1",
@@ -137,6 +123,11 @@ const CategoryManagement = () => {
     setSectionName("");
   };
 
+  const handleChangeSectionName = (name: string) => {
+    setSectionName(name);
+    setSectionError(false);
+  };
+
   const handleSubmitSection = () => {
     if (!sectionName.trim()) {
       setSectionError(true);
@@ -164,7 +155,7 @@ const CategoryManagement = () => {
     } else {
       // 新規セクション追加
       const newSection: Section = {
-        id: "",
+        id: Date.now().toString(),
         sectionName: sectionName,
         categories: [],
       };
@@ -198,6 +189,11 @@ const CategoryManagement = () => {
     setCategoryName("");
   };
 
+  const handleChangeCategoryName = (name: string) => {
+    setCategoryName(name);
+    setCategoryError(false);
+  };
+
   const handleSubmitCategory = () => {
     if (!categoryName.trim()) {
       setCategoryError(true);
@@ -212,7 +208,7 @@ const CategoryManagement = () => {
         if (section.id === selectedSection.id) {
           const updatedCategories = section.categories.map((category) =>
             category.id === currentCategory.id
-              ? { ...category, name: categoryName }
+              ? { ...category, categoryName: categoryName }
               : category
           );
           return { ...section, categories: updatedCategories };
@@ -225,7 +221,7 @@ const CategoryManagement = () => {
         ...selectedSection,
         categories: selectedSection.categories.map((category) =>
           category.id === currentCategory.id
-            ? { ...category, name: categoryName }
+            ? { ...category, categoryName: categoryName }
             : category
         ),
       });
@@ -352,7 +348,6 @@ const CategoryManagement = () => {
     setIsSaving(true);
     try {
       // ここで実際にAPIを呼び出す
-      // 例: await api.saveCategories(sections, categories);
       const savePayload: SavePayload = {
         sections: sections,
       };
@@ -379,258 +374,68 @@ const CategoryManagement = () => {
 
   return (
     <PageLayout title={t.CATEGORY_MANAGEMENT.TITLE}>
-      {/* ここに保存ボタンを追加 */}
-      <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={saveChangesToAPI}
-          disabled={isSaving}
-          sx={{ mt: 2, height: "40px" }}
-        >
-          {isSaving
-            ? t.CATEGORY_MANAGEMENT.SAVING
-            : t.CATEGORY_MANAGEMENT.SAVE_CHANGES}
-        </Button>
-      </Box>
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
+          <CategorySaveButton
+            isSaving={isSaving}
+            onClick={saveChangesToAPI}
+          />
+        </Box>
 
-      <Box sx={{ display: "flex", p: 3, mt: 8 }}>
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ height: '100%' }}>
           {/* セクション一覧 */}
-          <Grid sx={{ gridColumn: "span 4" }}>
-            <Paper sx={{ p: 2 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: "bold", margin: "0 10px" }}
-                >
-                  {t.CATEGORY_MANAGEMENT.SECTIONS}
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => handleOpenSectionDialog()}
-                >
-                  {t.CATEGORY_MANAGEMENT.ADD_SECTION}
-                </Button>
-              </Box>
-
-              <List>
-                {sections.map((section) => (
-                  <ListItem
-                    key={section.id}
-                    onClick={() => handleSelectSection(section)}
-                  >
-                    <ListItemText primary={section.sectionName} />
-                    <Box>
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleOpenSectionDialog(true, section)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        edge="end"
-                        onClick={() =>
-                          handleOpenDeleteDialog("section", section)
-                        }
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </ListItem>
-                ))}
-              </List>
-            </Paper>
+          <Grid sx={{ gridColumn: 'span 12' }}>
+            <SectionList
+              sections={sections}
+              selectedSection={selectedSection}
+              onSelectSection={handleSelectSection}
+              onAddSection={() => handleOpenSectionDialog()}
+              onEditSection={(section) => handleOpenSectionDialog(true, section)}
+              onDeleteSection={(section) => handleOpenDeleteDialog("section", section)}
+            />
           </Grid>
 
           {/* カテゴリ一覧 */}
-          <Grid sx={{ gridColumn: "span 8" }}>
-            <Paper sx={{ p: 2 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: "bold", margin: "0 10px" }}
-                >
-                  {selectedSection
-                    ? `${t.CATEGORY_MANAGEMENT.CATEGORIES} - ${selectedSection.sectionName}`
-                    : t.CATEGORY_MANAGEMENT.CATEGORIES}
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  disabled={!selectedSection}
-                  onClick={() => handleOpenCategoryDialog()}
-                >
-                  {t.CATEGORY_MANAGEMENT.ADD_CATEGORY}
-                </Button>
-              </Box>
-
-              {selectedSection ? (
-                <List>
-                  {selectedSection.categories.map((category) => (
-                    <ListItem
-                      key={category.id}
-                      secondaryAction={
-                        <Box>
-                          <IconButton
-                            edge="end"
-                            onClick={() =>
-                              handleOpenCategoryDialog(true, category)
-                            }
-                          >
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton
-                            edge="end"
-                            onClick={() =>
-                              handleOpenDeleteDialog("category", category)
-                            }
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
-                      }
-                    >
-                      <ListItemText primary={category.categoryName} />
-                    </ListItem>
-                  ))}
-                  {selectedSection.categories.length === 0 && (
-                    <Typography sx={{ p: 2, color: "text.secondary" }}>
-                      カテゴリがありません
-                    </Typography>
-                  )}
-                </List>
-              ) : (
-                <Typography sx={{ p: 2, color: "text.secondary" }}>
-                  セクションを選択してください
-                </Typography>
-              )}
-            </Paper>
+          <Grid sx={{ gridColumn: 'span 12' }}>
+            <CategoryList
+              selectedSection={selectedSection}
+              onAddCategory={() => handleOpenCategoryDialog()}
+              onEditCategory={(category) => handleOpenCategoryDialog(true, category)}
+              onDeleteCategory={(category) => handleOpenDeleteDialog("category", category)}
+            />
           </Grid>
         </Grid>
       </Box>
 
       {/* セクション追加/編集ダイアログ */}
-      <Dialog
+      <SectionDialog
         open={openSectionDialog}
+        isEditMode={isEditMode}
+        sectionName={sectionName}
+        sectionError={sectionError}
         onClose={handleCloseSectionDialog}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>
-          {isEditMode
-            ? t.CATEGORY_MANAGEMENT.EDIT_SECTION
-            : t.CATEGORY_MANAGEMENT.ADD_SECTION}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label={t.CATEGORY_MANAGEMENT.SECTION_NAME}
-            fullWidth
-            value={sectionName}
-            onChange={(e) => {
-              setSectionName(e.target.value);
-              setSectionError(false);
-            }}
-            error={sectionError}
-            helperText={
-              sectionError ? t.CATEGORY_MANAGEMENT.SECTION_REQUIRED : ""
-            }
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseSectionDialog}>
-            {t.CATEGORY_MANAGEMENT.CANCEL}
-          </Button>
-          <Button onClick={handleSubmitSection}>
-            {t.CATEGORY_MANAGEMENT.SAVE}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onChangeSectionName={handleChangeSectionName}
+        onSubmit={handleSubmitSection}
+      />
 
       {/* カテゴリ追加/編集ダイアログ */}
-      <Dialog
+      <CategoryDialog
         open={openCategoryDialog}
+        isEditMode={isEditMode}
+        categoryName={categoryName}
+        categoryError={categoryError}
         onClose={handleCloseCategoryDialog}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>
-          {isEditMode
-            ? t.CATEGORY_MANAGEMENT.EDIT_CATEGORY
-            : t.CATEGORY_MANAGEMENT.ADD_CATEGORY}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label={t.CATEGORY_MANAGEMENT.CATEGORY_NAME}
-            fullWidth
-            value={categoryName}
-            onChange={(e) => {
-              setCategoryName(e.target.value);
-              setCategoryError(false);
-            }}
-            error={categoryError}
-            helperText={
-              categoryError ? t.CATEGORY_MANAGEMENT.CATEGORY_REQUIRED : ""
-            }
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseCategoryDialog}>
-            {t.CATEGORY_MANAGEMENT.CANCEL}
-          </Button>
-          <Button onClick={handleSubmitCategory}>
-            {t.CATEGORY_MANAGEMENT.SAVE}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onChangeCategoryName={handleChangeCategoryName}
+        onSubmit={handleSubmitCategory}
+      />
 
       {/* 削除確認ダイアログ */}
-      <Dialog
+      <DeleteConfirmDialog
         open={openDeleteDialog}
+        deleteType={deleteType}
         onClose={handleCloseDeleteDialog}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>
-          {deleteType === "section"
-            ? t.CATEGORY_MANAGEMENT.DELETE_SECTION
-            : t.CATEGORY_MANAGEMENT.DELETE_CATEGORY}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {deleteType === "section"
-              ? t.CATEGORY_MANAGEMENT.CONFIRM_DELETE_SECTION
-              : t.CATEGORY_MANAGEMENT.CONFIRM_DELETE_CATEGORY}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDeleteDialog}>
-            {t.CATEGORY_MANAGEMENT.CANCEL}
-          </Button>
-          <Button onClick={handleDelete} color="error">
-            {t.CATEGORY_MANAGEMENT.DELETE}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleDelete}
+      />
 
       {/* 通知スナックバー */}
       <Snackbar
@@ -639,7 +444,13 @@ const CategoryManagement = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          elevation={6}
+          sx={{ width: '100%' }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

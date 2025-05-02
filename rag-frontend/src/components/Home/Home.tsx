@@ -33,7 +33,7 @@ const Home = () => {
         </Typography>
         <Box sx={{ mt: 4 }}>
           <Grid container spacing={4} justifyContent="center">
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid sx={{ gridColumn: 'span 12' }}>
               <Paper
                 elevation={3}
                 sx={{
@@ -69,7 +69,7 @@ const Home = () => {
                 </Button>
               </Paper>
             </Grid>
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid sx={{ gridColumn: 'span 12' }}>
               <Paper
                 elevation={3}
                 sx={{
@@ -105,7 +105,7 @@ const Home = () => {
                 </Button>
               </Paper>
             </Grid>
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid sx={{ gridColumn: 'span 12' }}>
               <Paper
                 elevation={3}
                 sx={{
