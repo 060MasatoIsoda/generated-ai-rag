@@ -409,23 +409,23 @@ const DocumentUpload = () => {
                 />
 
                 {/* ファイルリスト */}
-                  <FileList
-                    files={formData.files}
-                    onRemoveFile={handleRemoveFile}
-                    loading={loading}
-                    noFilesMessage={t.DOCUMENT_UPLOAD.NO_FILES_SELECTED}
-                  />
+                <FileList
+                  files={formData.files}
+                  onRemoveFile={handleRemoveFile}
+                  loading={loading}
+                  noFilesMessage={t.DOCUMENT_UPLOAD.NO_FILES_SELECTED}
+                />
 
                 {/* アップロードボタン */}
-                  <UploadButton
-                    onClick={handleUpload}
-                    loading={loading}
-                    disabled={formData.files.length === 0}
-                    labels={{
-                      uploading: t.DOCUMENT_UPLOAD.UPLOADING,
-                      upload: t.DOCUMENT_UPLOAD.UPLOAD,
-                    }}
-                  />
+                <UploadButton
+                  onClick={handleUpload}
+                  loading={loading}
+                  disabled={formData.files.length === 0}
+                  labels={{
+                    uploading: t.DOCUMENT_UPLOAD.UPLOADING,
+                    upload: t.DOCUMENT_UPLOAD.UPLOAD,
+                  }}
+                />
               </Grid>
             </Grid>
           </CardContent>
