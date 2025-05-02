@@ -6,6 +6,7 @@ export type Locale = {
     LANGUAGE_SELECT_ENGLISH: string;
     SEARCH: string;
     CATEGORY_MANAGEMENT: string;
+    DOCUMENT_UPLOAD: string;
   };
   SIDEBAR: {
     SECTION: string;
@@ -13,6 +14,17 @@ export type Locale = {
   };
   HOME: {
     TO_SEARCH: string;
+    TITLE: string;
+    SUBTITLE: string;
+    SEARCH_TITLE: string;
+    SEARCH_DESCRIPTION: string;
+    SEARCH_BUTTON: string;
+    CATEGORY_TITLE: string;
+    CATEGORY_DESCRIPTION: string;
+    CATEGORY_BUTTON: string;
+    UPLOAD_TITLE: string;
+    UPLOAD_DESCRIPTION: string;
+    UPLOAD_BUTTON: string;
   };
   SEARCH: {
     TITLE: string;
@@ -101,5 +113,25 @@ export type Locale = {
     ERROR_DELETE_SECTION: string;
     ERROR_DELETE_CATEGORY: string;
     ERROR_SAVE_CHANGES: string;
+    NO_CATEGORIES: string;
+    SELECT_SECTION: string;
+  };
+  DOCUMENT_UPLOAD: {
+    TITLE: string;
+    SECTION: string;
+    CATEGORY: string;
+    SELECT_SECTION: string;
+    SELECT_CATEGORY: string;
+    SELECT_FILES: string;
+    UPLOAD: string;
+    UPLOADING: string;
+    SUPPORTED_FORMATS: string;
+    NO_FILES_SELECTED: string;
+    UPLOAD_SUCCESS: string;
+    UPLOAD_PARTIAL_SUCCESS: string;
+    UPLOAD_ERROR: string;
+    INVALID_FILE_FORMAT: string;
+    REQUIRED_FIELDS: string;
+    NO_FILES_TO_UPLOAD: string;
   };
 };

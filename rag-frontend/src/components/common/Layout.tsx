@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 
 
 interface PageLayoutProps {
-    title: string
+    title?: string
     children: React.ReactNode
 }
 
@@ -24,6 +24,8 @@ function PageLayout({ title, children }: PageLayoutProps) {
         handleClose()
     }
 
+    const displayTitle = title || t.SEARCH.TITLE;
+
     return (
         <Box sx={{ display: "flex", height: "100vh" }}>
         <AppBar
@@ -40,7 +42,7 @@ function PageLayout({ title, children }: PageLayoutProps) {
                 transform: "translateX(-50%)",
               }}
             >
-              <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>{title}</Link>
+              <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>{displayTitle}</Link>
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button
@@ -56,6 +58,13 @@ function PageLayout({ title, children }: PageLayoutProps) {
                 to="/categories"
               >
                 {t.COMMON.CATEGORY_MANAGEMENT}
+              </Button>
+              <Button
+                color="inherit"
+                component={Link}
+                to="/upload"
+              >
+                {t.COMMON.DOCUMENT_UPLOAD}
               </Button>
             </Box>
             <Box marginLeft={"auto"}>
@@ -77,7 +86,9 @@ function PageLayout({ title, children }: PageLayoutProps) {
             </Box>
           </Toolbar>
         </AppBar>
-        {children}
+        <Box sx={{ pt: 8, width: '100%' }}>
+          {children}
+        </Box>
       </Box>
     )
 }

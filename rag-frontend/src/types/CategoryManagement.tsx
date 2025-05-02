@@ -21,3 +21,7 @@ export type MasterDataItem = {
   sectionName: string;
   categories: string[];
 };
+
+export type SavePayload = {
+  sections: Section[];
+};

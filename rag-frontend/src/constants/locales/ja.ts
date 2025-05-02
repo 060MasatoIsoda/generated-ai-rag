@@ -6,6 +6,7 @@ export const ja = {
     LANGUAGE_SELECT_ENGLISH: "英語",
     SEARCH: "検索",
     CATEGORY_MANAGEMENT: "カテゴリ管理",
+    DOCUMENT_UPLOAD: "データソース保存",
   },
   SIDEBAR: {
     SECTION: "セクション",
@@ -13,6 +14,17 @@ export const ja = {
   },
   HOME: {
     TO_SEARCH: "検索画面へ",
+    TITLE: "RAG検索アプリ",
+    SUBTITLE: "必要な情報を効率的に見つけるためのツール",
+    SEARCH_TITLE: "検索",
+    SEARCH_DESCRIPTION: "データベース内の情報を検索します",
+    SEARCH_BUTTON: "検索へ",
+    CATEGORY_TITLE: "カテゴリ管理",
+    CATEGORY_DESCRIPTION: "セクションとカテゴリの管理",
+    CATEGORY_BUTTON: "管理へ",
+    UPLOAD_TITLE: "データソース保存",
+    UPLOAD_DESCRIPTION: "ドキュメントをアップロードする",
+    UPLOAD_BUTTON: "アップロードへ",
   },
   SEARCH: {
     TITLE: "RAG検索アプリ",
@@ -104,5 +116,25 @@ export const ja = {
     ERROR_SAVE_CHANGES: "変更の保存に失敗しました",
     NO_CATEGORIES: "カテゴリがありません",
     SELECT_SECTION: "セクションを選択してください",
+  },
+  DOCUMENT_UPLOAD: {
+    TITLE: "データソース保存",
+    SECTION: "セクション",
+    CATEGORY: "カテゴリ",
+    SELECT_SECTION: "セクションを選択してください",
+    SELECT_CATEGORY: "カテゴリを選択してください",
+    SELECT_FILES: "ファイルを選択",
+    UPLOAD: "アップロード",
+    UPLOADING: "アップロード中...",
+    SUPPORTED_FORMATS:
+      "サポートされているファイル形式: PDF, DOC, DOCX, XLS, XLSX, TXT",
+    NO_FILES_SELECTED: "ファイルが選択されていません",
+    UPLOAD_SUCCESS: "ファイルのアップロードが完了しました",
+    UPLOAD_PARTIAL_SUCCESS:
+      "{success}/{total} ファイルのアップロードが完了しました",
+    UPLOAD_ERROR: "アップロード処理に失敗しました",
+    INVALID_FILE_FORMAT: "サポートされていないファイル形式です",
+    REQUIRED_FIELDS: "必須項目を入力してください",
+    NO_FILES_TO_UPLOAD: "アップロードするファイルがありません",
   },
 } as const;

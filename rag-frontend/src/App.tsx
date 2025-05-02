@@ -4,6 +4,7 @@ import { LanguageProvider } from './contexts/LanguageContext'
 import Search from './components/Search/Search'
 import Home from './components/Home/Home'
 import CategoryManagement from './components/CategoryManagement/CategoryManagement'
+import DocumentUpload from './components/DocumentUpload/DocumentUpload'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
           <Route path="/categories" element={<CategoryManagement />} />
+          <Route path="/upload" element={<DocumentUpload />} />
         </Routes>
       </Router>
     </LanguageProvider>

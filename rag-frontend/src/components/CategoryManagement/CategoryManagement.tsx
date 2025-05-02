@@ -24,7 +24,13 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { fetchMasterData, saveCategories } from "../../services/api";
-import { MasterDataItem, Section, Category } from "../../types/CategoryManagement";
+import {
+  MasterDataItem,
+  Section,
+  Category,
+  SavePayload,
+  MasterDataResponse,
+} from "../../types/CategoryManagement";
 
 // MasterDataItemからSectionへの変換関数
 const convertToSection = (item: MasterDataItem): Section => {
@@ -63,6 +69,31 @@ const CategoryManagement = () => {
     "section"
   );
   const [isSaving, setIsSaving] = useState(false);
+  const responseToSections = (response: MasterDataResponse) => {
+    const convertedSections = response.results.map(convertToSection);
+    setSections(convertedSections);
+    if (convertedSections.length > 0) {
+      setSelectedSection(convertedSections[0]);
+    }
+  };
+  const dummyData: Section[] = [
+    {
+      id: "1",
+      sectionName: "人事部",
+      categories: [
+        { id: "1-1", categoryName: "給与" },
+        { id: "1-2", categoryName: "採用" },
+      ],
+    },
+    {
+      id: "2",
+      sectionName: "営業部",
+      categories: [
+        { id: "2-1", categoryName: "顧客対応" },
+        { id: "2-2", categoryName: "販売実績" },
+      ],
+    },
+  ];
 
   // データ取得
   useEffect(() => {
@@ -71,32 +102,10 @@ const CategoryManagement = () => {
       try {
         const response = await fetchMasterData();
         // MasterDataItemからSectionに変換
-        const convertedSections = response.results.map(convertToSection);
-        setSections(convertedSections);
-        if (convertedSections.length > 0) {
-          setSelectedSection(convertedSections[0]);
-        }
+        responseToSections(response);
       } catch (error) {
         console.error("マスターデータの取得に失敗しました:", error);
         // エラー時はダミーデータを使用
-        const dummyData: Section[] = [
-          {
-            id: "1",
-            sectionName: "人事部",
-            categories: [
-              { id: "1-1", categoryName: "給与" },
-              { id: "1-2", categoryName: "採用" },
-            ],
-          },
-          {
-            id: "2",
-            sectionName: "営業部",
-            categories: [
-              { id: "2-1", categoryName: "顧客対応" },
-              { id: "2-2", categoryName: "販売実績" },
-            ],
-          },
-        ];
         setSections(dummyData);
         if (dummyData.length > 0) {
           setSelectedSection(dummyData[0]);
@@ -344,8 +353,11 @@ const CategoryManagement = () => {
     try {
       // ここで実際にAPIを呼び出す
       // 例: await api.saveCategories(sections, categories);
-      await saveCategories(sections);
-
+      const savePayload: SavePayload = {
+        sections: sections,
+      };
+      const response = await saveCategories(savePayload);
+      responseToSections(response);
       // 成功時の処理
       setSnackbar({
         open: true,

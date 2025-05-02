@@ -83,6 +83,19 @@ def numbering_id(sections: dict) -> dict:
             section['id'] = str(max_id)
     return sections
 
+def formatting_category_data(categories: dict) -> dict:
+    """
+    カテゴリデータをフォーマットする関数.
+    """
+    # categoriesを文字列の配列に変換
+    formatted_categories = []
+    for category in categories:
+        if isinstance(category, dict) and 'categoryName' in category:
+            formatted_categories.append(category['categoryName'])
+        elif isinstance(category, str):
+            formatted_categories.append(category)
+    return formatted_categories
+
 def formatting_section_data(sections: dict) -> dict:
     """
     セクションデータをフォーマットする関数.
@@ -95,10 +108,10 @@ def formatting_section_data(sections: dict) -> dict:
     for section in sections:
         id = section.get('id', '')
         sectionName = section.get('sectionName', '')
-        categories = section.get('categories', [])
+        categories = formatting_category_data(section.get('categories', []))
         formatted_sections.append({
             "id": id,
-            "updated_at": now.isoformat(),
+            "update_at": now.isoformat(),
             "sectionName": sectionName,
             "categories": categories
         })
@@ -109,11 +122,29 @@ def formatting_section_data(sections: dict) -> dict:
 def save_dynamodb_data(formatted_sections) -> None:
     """
     DynamoDBにデータを保存する関数.
-    既存のデータの場合はそのままidを採用し、新規の場合は最大ID+1を設定する
+    既存のデータの場合は更新し、新規の場合は追加する
     """
     table = dynamodb.Table(TABLE_NAME)
     for section in formatted_sections:
-        table.put_item(Item=section)
+        try:
+            # 既存のデータを更新
+            table.update_item(
+                Key={
+                    'id': section['id']
+                },
+                UpdateExpression='SET sectionName = :sn, categories = :cat, update_at = :ua',
+                ExpressionAttributeValues={
+                    ':sn': section['sectionName'],
+                    ':cat': section['categories'],
+                    ':ua': section['update_at']
+                }
+            )
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ValidationException':
+                # 新規データの場合は追加
+                table.put_item(Item=section)
+            else:
+                raise e
 
 
 def create_save_response(data) -> dict:
@@ -167,8 +198,13 @@ def save_categories():
         numbered_sections = numbering_id(sections)
         formatted_sections = formatting_section_data(numbered_sections)
         save_dynamodb_data(formatted_sections)
-        return create_save_response(formatted_sections)
-    return create_non_response()
+
+    dynamodb_data = fetch_dynamodb_data()
+
+    if not dynamodb_data:
+        return create_get_response([])
+
+    return create_get_response(dynamodb_data)
 
 @tracer.capture_lambda_handler
 def lambda_handler(event, context: LambdaContext) -> dict:

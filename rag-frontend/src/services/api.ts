@@ -1,6 +1,7 @@
 import axios from "axios";
 import { SearchPayload } from "../types/Search";
-import { Section } from "../types/CategoryManagement";
+import { SavePayload } from "../types/CategoryManagement";
+import { UploadResponse, PresignedUrlResponse } from "../types/DocumentUpload";
 
 // APIのベースURLを設定
 // 開発環境と本番環境で異なる場合は環境変数などで切り替えることができます
@@ -41,11 +42,11 @@ export const fetchMasterData = async () => {
   }
 };
 
-export const saveCategories = async (sections: Section[]) => {
+export const saveCategories = async (savePayload: SavePayload) => {
   try {
     const response = await apiClient.post(
-      "/masterdata/save-categories",
-      sections
+      "/masterdata/sections-categories",
+      savePayload
     );
     return response.data;
   } catch (error) {
@@ -54,8 +55,57 @@ export const saveCategories = async (sections: Section[]) => {
   }
 };
 
+// プリサインドURLを取得する関数
+export const getPresignedUrl = async (
+  fileName: string,
+  contentType: string,
+  sectionName: string,
+  categoryName: string
+): Promise<PresignedUrlResponse> => {
+  try {
+    const response = await apiClient.post("/document/presigned-url", {
+      fileName,
+      contentType,
+      sectionName,
+      categoryName,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("プリサインドURL取得エラー:", error);
+    throw error;
+  }
+};
+
+// S3にファイルを直接アップロードする関数
+export const uploadFileToS3 = async (
+  presignedUrl: string,
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<void> => {
+  try {
+    await axios.put(presignedUrl, file, {
+      headers: {
+        "Content-Type": file.type,
+      },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          onProgress(percentCompleted);
+        }
+      },
+    });
+  } catch (error) {
+    console.error("S3アップロードエラー:", error);
+    throw error;
+  }
+};
+
 export default {
   searchDocuments,
   fetchMasterData,
   saveCategories,
+  getPresignedUrl,
+  uploadFileToS3,
 };
