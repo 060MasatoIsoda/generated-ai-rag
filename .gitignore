@@ -28,3 +28,5 @@ build/
 .Trashes
 ehthumbs.db
 Thumbs.db
+.yarnrc
+yarn.lock
