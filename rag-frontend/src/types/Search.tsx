@@ -32,10 +32,12 @@ export interface DocumentMetadata {
 
 // ドキュメント単体の型定義
 export interface Document {
-  content: DocumentContent;
-  location: DocumentLocation;
-  metadata: DocumentMetadata;
-  score: number;
+  id: string;
+  DocumentTitle: string;
+  DocumentUrl: string;
+  DocumentPage: string;
+  Content: string;
+  Score: number;
 }
 
 // レスポンスのインターフェース
@@ -47,7 +49,7 @@ export interface SearchResponse {
 
 // 検索結果のインターフェース
 export interface SearchResult {
-  category_name: string;
+  categories: string[];
   documents: Document[];
   section_name: string;
   highest_score_text: string;

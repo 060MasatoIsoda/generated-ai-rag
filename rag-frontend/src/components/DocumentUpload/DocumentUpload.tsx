@@ -18,12 +18,7 @@ import {
 import { Section } from "../../types/CategoryManagement";
 import { UploadFile, DocumentUploadFormData } from "../../types/DocumentUpload";
 import { MasterDataItem } from "../../types/CategoryManagement";
-import {
-  CloudUpload as UploadIcon,
-  Description as FileIcon,
-  Storage as DatabaseIcon,
-  FolderOpen as FolderIcon,
-} from "@mui/icons-material";
+import {Storage as DatabaseIcon } from "@mui/icons-material";
 // Components
 import SectionSelector from "./SectionSelector";
 import CategorySelector from "./CategorySelector";

@@ -1,5 +1,13 @@
 import { SearchResult } from '../../types/Search'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { useRef, useEffect } from 'react';
+import * as pdfjsLib from 'pdfjs-dist'
+
+// PDF.jsワーカーの設定
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString();
 
 interface SearchResultsProps {
   results: SearchResult;
@@ -11,6 +19,30 @@ interface SearchResultsProps {
 
 const SearchResults = ({ results, totalResults, query, loading, error }: SearchResultsProps) => {
   const { t } = useLanguage()
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    results.documents.forEach(async (result) => {
+      const loadPdf = async () => {
+        try {
+          const pdf = await pdfjsLib.getDocument(result.DocumentUrl).promise;
+          const page = await pdf.getPage(parseInt(result.DocumentPage));
+          const viewport = page.getViewport({ scale: 1.0 });
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const context = canvas.getContext('2d');
+          if (!context) return;
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          await page.render({ canvasContext: context, viewport: viewport }).promise;
+        } catch (error) {
+          console.error('PDFファイルの読み込みに失敗しました:', error);
+        }
+      }
+      loadPdf();
+    })
+  }, [results.documents])
+
 
   return (
     <div className="results-container">
@@ -29,10 +61,12 @@ const SearchResults = ({ results, totalResults, query, loading, error }: SearchR
               <div className="all-results">
                 <h3>{t.SEARCH.ALL_RESULTS}</h3>
                 {results.documents.map((result, index) =>
-                  result.score ? (
+                  result.Score ? (
                     <li key={index} className="result-item">
-                      <h3>{t.SEARCH.ANSWER} {index + 1} ({t.SEARCH.SCORE}: {result.score.toFixed(4)})</h3>
-                      <p>{result.content.text}</p>
+                      <h3>{t.SEARCH.ANSWER} {index + 1} ({t.SEARCH.SCORE}: {result.Score.toFixed(4)})</h3>
+                      <p>{result.Content}</p>
+                      <canvas ref={canvasRef} />
+                      <a href={result.DocumentUrl} target="_blank" rel="noopener noreferrer">{t.SEARCH.REFERENCE_DOCUMENT}</a>
                     </li>
                   ) : null
                 )}

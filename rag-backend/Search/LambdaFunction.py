@@ -4,6 +4,7 @@ import json
 import boto3
 import boto3.dynamodb
 import sys
+import base64
 import logger
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -20,11 +21,11 @@ AWS_REGION = os.environ.get('AWS_REGION', 'ap-northeast-1')  # デフォルト�
 ALLOW_ORIGINS = os.environ.get("ALLOW_ORIGINS", "*")
 TABLE_NAME = os.environ.get('TABLE_NAME', 'default-table-name')
 KNOWLEDGEBASE_ID = os.environ.get('KNOWLEDGEBASE_ID', '')
-
 # CORSの設定
 cors_config = CORSConfig(allow_origin=ALLOW_ORIGINS)
 app = APIGatewayRestResolver(cors=cors_config)
 dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
+s3_client = boto3.client('s3', region_name=AWS_REGION)
 tracer = Tracer()
 bedrock_agent_runtime = boto3.client('bedrock-agent-runtime')
 
@@ -33,11 +34,11 @@ def format_documents(documents: list) -> list:
     ドキュメントを整形する関数.
     """
     formatted_documents = []
-    logger.info(f"Documents: {documents}")
     for index, document in enumerate(documents):
         formatted_documents.append({
             "id": index,
             'DocumentTitle': document['metadata'].get('x-amz-bedrock-kb-source-uri', '未指定'),
+            'DocumentUrl': get_presigned_url(document['metadata'].get('x-amz-bedrock-kb-source-uri', '')),
             'DocumentPage': document['metadata'].get('x-amz-bedrock-kb-document-page-number', '未指定'),
             'Content': document['content'].get('text', ''),
             'Score': document['score'],
@@ -127,6 +128,55 @@ def create_response(data: List[Dict[str, Any]]) -> dict:
         })
     )
 
+def get_presigned_url(s3_uri: str):
+    """
+    プレサインURLを取得する関数.
+    """
+    bucket = s3_uri.split('/')[2]
+    key = '/'.join(s3_uri.split('/')[3:])
+    return s3_client.generate_presigned_url(
+        'get_object', Params={'Bucket': bucket, 'Key': key}, ExpiresIn=3600)
+
+# def pdf_to_image(file_name: str, content_type: str, section_name: str, category_name: str):
+#     """
+#     プレサインURLを取得する関数.
+#     """
+#     # data mapping
+#     request_body: dict = app.current_event.json_body
+
+#     s3_uri = request_body.get('s3_uri', '')
+#     page_number = request_body.get('page_number', '')
+#     try:
+#         # S3からPDFを取得
+#         bucket = s3_uri.split('/')[2]
+#         key = '/'.join(s3_uri.split('/')[3:])
+
+#         response = s3_client.get_object(Bucket=bucket, Key=key)
+#         pdf_data = response['Body'].read()
+
+#         # PDFを開く
+#         pdf_document = fitz.open(stream=pdf_data, filetype="pdf")
+
+#         # 指定されたページを取得
+#         page = pdf_document[request.page_number - 1]
+
+#         # ページを画像に変換
+#         pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2倍の解像度
+#         img_data = pix.tobytes("png")
+
+#         # Base64エンコード
+#         base64_image = base64.b64encode(img_data).decode()
+
+#         return {
+#             "image": base64_image,
+#             "format": "png"
+#         }
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+#     finally:
+#         if 'pdf_document' in locals():
+#             pdf_document.close()
 
 @app.post('/knowledgebase/search')
 @tracer.capture_method

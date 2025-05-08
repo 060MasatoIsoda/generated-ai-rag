@@ -13,7 +13,7 @@ function Search() {
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult>({
-    category_name: "",
+    categories: [],
     documents: [],
     section_name: "",
     highest_score_text: "",
@@ -49,7 +49,7 @@ function Search() {
       console.error('検索中にエラーが発生しました:', err);
       setError(t.SEARCH.ERROR);
       setResults({
-        category_name: "",
+        categories: [],
         documents: [],
         section_name: "",
         highest_score_text: "",
