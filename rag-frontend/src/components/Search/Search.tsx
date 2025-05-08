@@ -8,16 +8,18 @@ import PageLayout from "../common/Layout";
 import "./Search.css";
 import { searchDocuments } from "../../services/api";
 
+const initialResults: SearchResult = {
+  categories: [],
+  documents: [],
+  section_name: "",
+  highest_score_text: "",
+  result_message: "",
+};
 
 function Search() {
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult>({
-    categories: [],
-    documents: [],
-    section_name: "",
-    highest_score_text: "",
-  });
+  const [results, setResults] = useState<SearchResult>(initialResults);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalResults, setTotalResults] = useState(0);
@@ -48,15 +50,11 @@ function Search() {
     } catch (err) {
       console.error('検索中にエラーが発生しました:', err);
       setError(t.SEARCH.ERROR);
-      setResults({
-        categories: [],
-        documents: [],
-        section_name: "",
-        highest_score_text: "",
-      });
+      setResults(initialResults);
       setTotalResults(0);
     } finally {
       setLoading(false);
+      console.log(totalResults);
     }
   };
 
@@ -87,7 +85,6 @@ function Search() {
 
             <SearchResults
               results={results}
-              totalResults={totalResults}
               query={query}
               loading={loading}
               error={error}

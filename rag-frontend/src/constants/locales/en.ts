@@ -35,6 +35,7 @@ export const en = {
     NO_RESULTS: "No search results found",
     ANSWER: "Answer",
     HIGHEST_SCORE_ANSWER: "Best Answer",
+    RESULT_MESSAGE: "Answer",
     REFERENCE_DOCUMENT: "Reference Document",
     ALL_RESULTS: "All Search Results",
     SCORE: "Score",

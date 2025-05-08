@@ -35,6 +35,7 @@ export type Locale = {
     NO_RESULTS: string;
     ANSWER: string;
     HIGHEST_SCORE_ANSWER: string;
+    RESULT_MESSAGE: string;
     REFERENCE_DOCUMENT: string;
     ALL_RESULTS: string;
     SCORE: string;

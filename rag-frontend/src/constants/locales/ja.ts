@@ -35,6 +35,7 @@ export const ja = {
     NO_RESULTS: "検索結果がありません",
     ANSWER: "回答",
     HIGHEST_SCORE_ANSWER: "最適な回答",
+    RESULT_MESSAGE: "回答",
     REFERENCE_DOCUMENT: "参考文献",
     ALL_RESULTS: "すべての検索結果",
     SCORE: "スコア",

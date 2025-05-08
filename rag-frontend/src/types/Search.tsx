@@ -53,6 +53,7 @@ export interface SearchResult {
   documents: Document[];
   section_name: string;
   highest_score_text: string;
+  result_message: string;
 }
 
 export type SearchPayload = {

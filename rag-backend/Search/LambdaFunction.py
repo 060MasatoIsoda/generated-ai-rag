@@ -21,6 +21,8 @@ AWS_REGION = os.environ.get('AWS_REGION', 'ap-northeast-1')  # デフォルト�
 ALLOW_ORIGINS = os.environ.get("ALLOW_ORIGINS", "*")
 TABLE_NAME = os.environ.get('TABLE_NAME', 'default-table-name')
 KNOWLEDGEBASE_ID = os.environ.get('KNOWLEDGEBASE_ID', '')
+MODEL_VERSION = os.environ.get('MODEL_VERSION', 'anthropic.claude-3-5-sonnet-20240620-v1:0')
+ANTHROPIC_VERSION = os.environ.get('ANTHROPIC_VERSION', 'bedrock-2023-05-31')
 # CORSの設定
 cors_config = CORSConfig(allow_origin=ALLOW_ORIGINS)
 app = APIGatewayRestResolver(cors=cors_config)
@@ -28,6 +30,44 @@ dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
 s3_client = boto3.client('s3', region_name=AWS_REGION)
 tracer = Tracer()
 bedrock_agent_runtime = boto3.client('bedrock-agent-runtime')
+bedrock_runtime = boto3.client('bedrock-runtime')
+
+MESSAGE_HEADER = """
+あなたは社内ユーザーからの質問を応えるAIアシスタントです。
+以下の手順で社員の質問に答えてください。手順以外のことは絶対にしないでください。
+
+<回答手順>
+* <参考ドキュメント></参考ドキュメント>に回答の参考となるドキュメントを設定しているので、それを全て理解してください。
+    なお、この<参考ドキュメント></参考ドキュメント>は<参考ドキュメントのJSON形式></参考ドキュメントのJSON形式>のフォーマットで設定されています。ドキュメントが複数個存在する可能性があります。そのすべてを理解してください。
+* <回答のルール></回答のルール>を理解してください。このルールは絶対に守ってください。ルール以外のことは一切してはいけません。例外は一切ありません。
+* チャットでユーザから質問が入力されるので、あなたは<参考ドキュメント></参考ドキュメント>の内容をもとに<回答のルール></回答のルール>に従って回答を行なってください。
+</回答手順>
+
+<参考ドキュメントのJSON形式>
+{
+"id": "ドキュメントを一意に特定するIDです。",
+"DocumentTitle": "ドキュメントのタイトルです。",
+"DocumentUrl": "ドキュメントのURLです。",
+"DocumentPage": "ドキュメントのページです。",
+"Content": "ドキュメントの内容です。こちらをもとに回答してください。",
+"Score": "ドキュメントのスコアです。"
+}
+</参考ドキュメントのJSON形式>
+
+<参考ドキュメント>
+"""
+
+MESSAGE_FOOTER = """
+</参考ドキュメント>
+
+<回答のルール>
+* 雑談や挨拶には応じないでください。「私は雑談はできません。通常のチャット機能をご利用ください。」とだけ出力してください。他の文言は一切出力しないでください。例外はありません。
+* 必ず<参考ドキュメント></参考ドキュメント>をもとに回答してください。<参考ドキュメント></参考ドキュメント>から読み取れないことは、絶対に回答しないでください。
+* <参考ドキュメント></参考ドキュメント>から読み取れない場合は、「回答に必要な情報が見つかりませんでした。」とだけ出力してください。例外はありません。
+* 質問に具体性がなく回答できない場合は、質問の仕方をアドバイスしてください。
+* 回答文以外の文字列は一切出力しないで下さい。回答はJSON形式ではなく、テキストで出力してください。見出しやタイトル等も必要ありません。
+</回答のルール>
+"""
 
 def format_documents(documents: list) -> list:
     """
@@ -178,6 +218,62 @@ def get_presigned_url(s3_uri: str):
 #         if 'pdf_document' in locals():
 #             pdf_document.close()
 
+def generate_summary_prompt(documents: list, search_text: str):
+    """
+    要約のプロンプトを生成する関数.
+    """
+    query = MESSAGE_HEADER + documents + MESSAGE_FOOTER
+
+    message = [
+        {
+            "role": "user",
+            "content": [{
+                "type": "text",
+                "text": search_text
+            }]
+        }
+    ]
+
+    return {
+        'anthropic_version': ANTHROPIC_VERSION,
+        'max_tokens': 1000,
+        'system': query,
+        'messages': message
+    }
+
+def generate_summary(documents: list, search_text: str):
+    """
+    検索結果の要約を生成する関数.
+    """
+    response = bedrock_runtime.invoke_model(
+        modelId=MODEL_VERSION,
+        accept="application/json",
+        body=json.dumps(generate_summary_prompt(documents, search_text)),
+        contentType="application/json",
+    )
+    response_body = json.loads(response.get('body').read())
+    return response_body.get('content')[0].get('text')
+
+def generate_retrieval_result(retrieved_results: list, search_text: str, section_name: str, categories: list):
+    """
+    検索結果を生成する関数.
+    """
+    if section_name and categories:
+        documents = retrieve_documents(search_text, section_name, categories)
+    else:
+        documents = retrieve_documents_without_filter(search_text)
+    formatted_documents = format_documents(documents)
+    result_message = generate_summary(json.dumps(formatted_documents), search_text)
+    highest_score_text = get_highest_score_text(documents)
+    retrieved_results.append({
+        'section_name': section_name,
+        'categories': categories,
+        'documents': formatted_documents,
+        'highest_score_text': highest_score_text,
+        'result_message': result_message
+    })
+
+
 @app.post('/knowledgebase/search')
 @tracer.capture_method
 def search_rag():
@@ -199,44 +295,16 @@ def search_rag():
             for target in search_target:
                 section_name = target.get('section_name', '')
                 categories = target.get('category', [])
-                documents = retrieve_documents(search_text, section_name, categories)
-                formatted_documents = format_documents(documents)
-                # スコアが最も高いテキストを取得
-                highest_score_text = get_highest_score_text(documents)
-
-                retrieved_results.append({
-                    'section_name': section_name,
-                    'categories': categories,
-                    'documents': formatted_documents,
-                    'highest_score_text': highest_score_text
-                })
+                generate_retrieval_result(retrieved_results, search_text, section_name, categories)
         else:
             # オブジェクトの場合、for文を使わずに処理
             section_name = search_target.get('section_name', '')
             categories = search_target.get('category', [])
-            documents = retrieve_documents(search_text, section_name, categories)
-            formatted_documents = format_documents(documents)
-            # スコアが最も高いテキストを取得
-            highest_score_text = get_highest_score_text(documents)
+            generate_retrieval_result(retrieved_results, search_text, section_name, categories)
 
-            retrieved_results.append({
-                'section_name': section_name,
-                'categories': categories,
-                'documents': formatted_documents,
-                'highest_score_text': highest_score_text
-            })
     else:
-        documents = retrieve_documents_without_filter(search_text)
-        formatted_documents = format_documents(documents)
-        # スコアが最も高いテキストを取得
-        highest_score_text = get_highest_score_text(documents)
+        generate_retrieval_result(retrieved_results, search_text, '', [])
 
-        retrieved_results.append({
-            'section_name': '',
-            'category_name': '',
-            'documents': formatted_documents,
-            'highest_score_text': highest_score_text
-        })
     logger.info(f"Retrieved results: {retrieved_results}")
 
     return create_response(retrieved_results)
