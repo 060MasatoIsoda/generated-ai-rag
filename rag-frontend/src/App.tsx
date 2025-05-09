@@ -5,7 +5,7 @@ import Search from './components/Search/Search'
 import Home from './components/Home/Home'
 import CategoryManagement from './components/CategoryManagement/CategoryManagement'
 import DocumentUpload from './components/DocumentUpload/DocumentUpload'
-
+import SearchStreaming from './components/SearchStreaming/SearchStreaming'
 function App() {
   return (
     <LanguageProvider>
@@ -15,6 +15,7 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/categories" element={<CategoryManagement />} />
           <Route path="/upload" element={<DocumentUpload />} />
+          <Route path="/search-streaming" element={<SearchStreaming />} />
         </Routes>
       </Router>
     </LanguageProvider>

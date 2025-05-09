@@ -177,6 +177,46 @@ def get_presigned_url(s3_uri: str):
     return s3_client.generate_presigned_url(
         'get_object', Params={'Bucket': bucket, 'Key': key}, ExpiresIn=3600)
 
+# def pdf_to_image(file_name: str, content_type: str, section_name: str, category_name: str):
+#     """
+#     プレサインURLを取得する関数.
+#     """
+#     # data mapping
+#     request_body: dict = app.current_event.json_body
+
+#     s3_uri = request_body.get('s3_uri', '')
+#     page_number = request_body.get('page_number', '')
+#     try:
+#         # S3からPDFを取得
+#         bucket = s3_uri.split('/')[2]
+#         key = '/'.join(s3_uri.split('/')[3:])
+
+#         response = s3_client.get_object(Bucket=bucket, Key=key)
+#         pdf_data = response['Body'].read()
+
+#         # PDFを開く
+#         pdf_document = fitz.open(stream=pdf_data, filetype="pdf")
+
+#         # 指定されたページを取得
+#         page = pdf_document[request.page_number - 1]
+
+#         # ページを画像に変換
+#         pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2倍の解像度
+#         img_data = pix.tobytes("png")
+
+#         # Base64エンコード
+#         base64_image = base64.b64encode(img_data).decode()
+
+#         return {
+#             "image": base64_image,
+#             "format": "png"
+#         }
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+#     finally:
+#         if 'pdf_document' in locals():
+#             pdf_document.close()
 
 def generate_summary_prompt(documents: list, search_text: str):
     """

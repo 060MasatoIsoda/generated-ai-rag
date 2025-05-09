@@ -66,6 +66,13 @@ function PageLayout({ title, children }: PageLayoutProps) {
               >
                 {t.COMMON.DOCUMENT_UPLOAD}
               </Button>
+              <Button
+                color="inherit"
+                component={Link}
+                to="/search-streaming"
+              >
+                {t.COMMON.SEARCH_STREAMING}
+              </Button>
             </Box>
             <Box marginLeft={"auto"}>
               <Button

@@ -7,6 +7,7 @@ export const ja = {
     SEARCH: "検索",
     CATEGORY_MANAGEMENT: "カテゴリ管理",
     DOCUMENT_UPLOAD: "データソース保存",
+    SEARCH_STREAMING: "ストリーム検索",
   },
   SIDEBAR: {
     SECTION: "セクション",
@@ -25,6 +26,10 @@ export const ja = {
     UPLOAD_TITLE: "データソース保存",
     UPLOAD_DESCRIPTION: "ドキュメントをアップロードする",
     UPLOAD_BUTTON: "アップロードへ",
+    SEARCH_STREAMING_TITLE: "ストリーム検索",
+    SEARCH_STREAMING_DESCRIPTION:
+      "データベース内の情報をストリームで検索します",
+    SEARCH_STREAMING_BUTTON: "ストリーム検索へ",
   },
   SEARCH: {
     TITLE: "RAG検索アプリ",

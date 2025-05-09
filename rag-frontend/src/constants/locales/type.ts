@@ -7,6 +7,7 @@ export type Locale = {
     SEARCH: string;
     CATEGORY_MANAGEMENT: string;
     DOCUMENT_UPLOAD: string;
+    SEARCH_STREAMING: string;
   };
   SIDEBAR: {
     SECTION: string;
@@ -25,6 +26,9 @@ export type Locale = {
     UPLOAD_TITLE: string;
     UPLOAD_DESCRIPTION: string;
     UPLOAD_BUTTON: string;
+    SEARCH_STREAMING_TITLE: string;
+    SEARCH_STREAMING_DESCRIPTION: string;
+    SEARCH_STREAMING_BUTTON: string;
   };
   SEARCH: {
     TITLE: string;

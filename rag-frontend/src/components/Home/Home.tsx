@@ -1,30 +1,34 @@
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { Box, Button, Container, Typography, Grid, Paper } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import CategoryIcon from '@mui/icons-material/Category';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import PageLayout from '../common/Layout';
+import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { Box, Button, Container, Typography, Grid, Paper } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import CategoryIcon from "@mui/icons-material/Category";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import PageLayout from "../common/Layout";
 
 const Home = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
   const handleNavigateToSearch = () => {
-    navigate('/search');
+    navigate("/search");
   };
 
   const handleNavigateToCategories = () => {
-    navigate('/categories');
+    navigate("/categories");
   };
 
   const handleNavigateToUpload = () => {
-    navigate('/upload');
+    navigate("/upload");
+  };
+
+  const handleNavigateToSearchStreaming = () => {
+    navigate("/search-streaming");
   };
 
   return (
     <PageLayout>
-      <Container maxWidth="md">
+      <Container maxWidth={false} sx={{ maxWidth: '90%' }}>
         <Typography variant="h3" align="center" gutterBottom>
           {t.HOME.TITLE}
         </Typography>
@@ -33,19 +37,19 @@ const Home = () => {
         </Typography>
         <Box sx={{ mt: 4 }}>
           <Grid container spacing={4} justifyContent="center">
-            <Grid sx={{ gridColumn: 'span 12' }}>
+            <Grid size={3} sx={{ gridColumn: "span 12" }}>
               <Paper
                 elevation={3}
                 sx={{
                   p: 3,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  height: '100%',
-                  cursor: 'pointer',
-                  transition: '0.3s',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  height: "100%",
+                  cursor: "pointer",
+                  transition: "0.3s",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
                     boxShadow: 6,
                   },
                 }}
@@ -55,7 +59,11 @@ const Home = () => {
                 <Typography variant="h6" align="center" sx={{ mt: 2 }}>
                   {t.HOME.SEARCH_TITLE}
                 </Typography>
-                <Typography variant="body2" align="center" sx={{ mt: 1, flexGrow: 1 }}>
+                <Typography
+                  variant="body2"
+                  align="center"
+                  sx={{ mt: 1, flexGrow: 1 }}
+                >
                   {t.HOME.SEARCH_DESCRIPTION}
                 </Typography>
                 <Button
@@ -69,19 +77,19 @@ const Home = () => {
                 </Button>
               </Paper>
             </Grid>
-            <Grid sx={{ gridColumn: 'span 12' }}>
+            <Grid size={3} sx={{ gridColumn: "span 12" }}>
               <Paper
                 elevation={3}
                 sx={{
                   p: 3,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  height: '100%',
-                  cursor: 'pointer',
-                  transition: '0.3s',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  height: "100%",
+                  cursor: "pointer",
+                  transition: "0.3s",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
                     boxShadow: 6,
                   },
                 }}
@@ -91,7 +99,11 @@ const Home = () => {
                 <Typography variant="h6" align="center" sx={{ mt: 2 }}>
                   {t.HOME.CATEGORY_TITLE}
                 </Typography>
-                <Typography variant="body2" align="center" sx={{ mt: 1, flexGrow: 1 }}>
+                <Typography
+                  variant="body2"
+                  align="center"
+                  sx={{ mt: 1, flexGrow: 1 }}
+                >
                   {t.HOME.CATEGORY_DESCRIPTION}
                 </Typography>
                 <Button
@@ -105,19 +117,19 @@ const Home = () => {
                 </Button>
               </Paper>
             </Grid>
-            <Grid sx={{ gridColumn: 'span 12' }}>
+            <Grid size={3} sx={{ gridColumn: "span 12" }}>
               <Paper
                 elevation={3}
                 sx={{
                   p: 3,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  height: '100%',
-                  cursor: 'pointer',
-                  transition: '0.3s',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  height: "100%",
+                  cursor: "pointer",
+                  transition: "0.3s",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
                     boxShadow: 6,
                   },
                 }}
@@ -127,7 +139,11 @@ const Home = () => {
                 <Typography variant="h6" align="center" sx={{ mt: 2 }}>
                   {t.HOME.UPLOAD_TITLE}
                 </Typography>
-                <Typography variant="body2" align="center" sx={{ mt: 1, flexGrow: 1 }}>
+                <Typography
+                  variant="body2"
+                  align="center"
+                  sx={{ mt: 1, flexGrow: 1 }}
+                >
                   {t.HOME.UPLOAD_DESCRIPTION}
                 </Typography>
                 <Button
@@ -138,6 +154,46 @@ const Home = () => {
                   onClick={handleNavigateToUpload}
                 >
                   {t.HOME.UPLOAD_BUTTON}
+                </Button>
+              </Paper>
+            </Grid>
+            <Grid size={3} sx={{ gridColumn: "span 12" }}>
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 3,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  height: "100%",
+                  cursor: "pointer",
+                  transition: "0.3s",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
+                    boxShadow: 6,
+                  },
+                }}
+                onClick={handleNavigateToSearchStreaming}
+              >
+                <SearchIcon fontSize="large" color="primary" />
+                <Typography variant="h6" align="center" sx={{ mt: 2 }}>
+                  {t.HOME.SEARCH_STREAMING_TITLE}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  align="center"
+                  sx={{ mt: 1, flexGrow: 1 }}
+                >
+                  {t.HOME.SEARCH_STREAMING_DESCRIPTION}
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<SearchIcon />}
+                  sx={{ mt: 2 }}
+                  onClick={handleNavigateToSearchStreaming}
+                >
+                  {t.HOME.SEARCH_STREAMING_BUTTON}
                 </Button>
               </Paper>
             </Grid>

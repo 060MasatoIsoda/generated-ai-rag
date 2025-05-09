@@ -1,0 +1,26 @@
+.search-page-layout {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.search-sidebar {
+  flex: 0 0 300px;
+}
+
+.search-main {
+  flex: 1;
+  width: 1000px;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .search-page-layout {
+    flex-direction: column;
+  }
+
+  .search-sidebar {
+    flex: auto;
+    width: 100%;
+  }
+}

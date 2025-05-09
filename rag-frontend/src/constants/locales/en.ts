@@ -7,6 +7,7 @@ export const en = {
     SEARCH: "Search",
     CATEGORY_MANAGEMENT: "Category Management",
     DOCUMENT_UPLOAD: "Document Upload",
+    SEARCH_STREAMING: "Streaming Search",
   },
   SIDEBAR: {
     SECTION: "Section",
@@ -25,6 +26,10 @@ export const en = {
     UPLOAD_TITLE: "Document Upload",
     UPLOAD_DESCRIPTION: "Upload documents to the system",
     UPLOAD_BUTTON: "Go to Upload",
+    SEARCH_STREAMING_TITLE: "Streaming Search",
+    SEARCH_STREAMING_DESCRIPTION:
+      "Search for information in the database in a streaming manner",
+    SEARCH_STREAMING_BUTTON: "Go to Streaming Search",
   },
   SEARCH: {
     TITLE: "RAG Search Application",
