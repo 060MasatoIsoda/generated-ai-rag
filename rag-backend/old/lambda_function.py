@@ -19,7 +19,7 @@ MODEL_REGION = os.environ.get('MODEL_REGION')
 ANTHROPIC_VERSION = os.environ.get('ANTHROPIC_VERSION')
 SERVER_HOST = os.environ.get('SERVER_HOST', '127.0.0.1')    # サーバーホストの設定を追加
 SERVER_PORT = int(os.environ.get('SERVER_PORT', '8080'))
-ALLOW_ORIGIN = os.getenv('ALLOW_ORIGIN', '*')  # デフォルト値を '*' に設定
+ALLOW_ORIGIN = os.getenv('ALLOW_ORIGIN')
 
 # AWSクライアントの初期化
 bedrock_runtime = boto3.client('bedrock-runtime')
@@ -267,10 +267,6 @@ def process_chat_request(retrieved_results: list, search_text: str):
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
             'X-Accel-Buffering': 'no',
-            'Content-Type': 'text/event-stream',
-            'Access-Control-Allow-Origin': ALLOW_ORIGIN,
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         },
     )
 
@@ -338,118 +334,6 @@ async def chat(request: Request):
 @app.on_event('shutdown')
 async def shutdown_event():
     langfuse_context.flush()
-
-
-# Lambda関数ハンドラー
-def lambda_handler(event, context):
-    """AWS Lambda関数のハンドラー.
-
-    Args:
-        event: AWS Lambdaのイベントデータです.
-        context: AWS Lambdaのコンテキストデータです.
-
-    Returns:
-        dict: Lambda関数からのレスポンスです.
-    """
-    try:
-        # APIゲートウェイのタイプを判断
-        if event.get('requestContext', {}).get('http', {}).get('method') == 'OPTIONS':
-            # OPTIONSリクエストの処理
-            return {
-                'statusCode': 200,
-                'headers': {
-                    'Access-Control-Allow-Origin': ALLOW_ORIGIN,
-                    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                    'Content-Type': 'application/json',
-                },
-                'body': json.dumps({'message': 'Preflight request successful'}),
-            }
-
-        # POSTリクエストの処理
-        if event.get('requestContext', {}).get('http', {}).get('method') == 'POST':
-            # リクエストボディの解析
-            if 'body' in event:
-                try:
-                    body = json.loads(event['body']) if isinstance(event['body'], str) else event['body']
-                except json.JSONDecodeError:
-                    return {
-                        'statusCode': 400,
-                        'headers': {
-                            'Access-Control-Allow-Origin': ALLOW_ORIGIN,
-                            'Content-Type': 'application/json',
-                        },
-                        'body': json.dumps({'error': 'Invalid JSON body'}),
-                    }
-
-                # FastAPIアプリケーションを使用して処理
-                import asyncio
-
-                # 非同期関数を実行するためのヘルパー関数
-                def run_async(coroutine):
-                    loop = asyncio.get_event_loop()
-                    return loop.run_until_complete(coroutine)
-
-                # ストリーミングレスポンスのためのマルチパートレスポンス
-                response_body = ''
-                chunks = run_async(collect_stream_chunks(
-                    body.get('retrievedResults', []),
-                    body.get('searchText', ''),
-                ))
-
-                for chunk in chunks:
-                    response_body += chunk
-
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Access-Control-Allow-Origin': ALLOW_ORIGIN,
-                        'Content-Type': 'text/event-stream',
-                        'Cache-Control': 'no-cache',
-                        'Connection': 'keep-alive',
-                        'X-Accel-Buffering': 'no',
-                    },
-                    'body': response_body,
-                    'isBase64Encoded': False,
-                }
-
-        # その他のHTTPメソッドの処理
-        return {
-            'statusCode': 405,
-            'headers': {
-                'Access-Control-Allow-Origin': ALLOW_ORIGIN,
-                'Content-Type': 'application/json',
-            },
-            'body': json.dumps({'error': 'Method not allowed'}),
-        }
-
-    except Exception as ex:
-        logger.error('Lambda handler error: %s', str(ex))
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Access-Control-Allow-Origin': ALLOW_ORIGIN,
-                'Content-Type': 'application/json',
-            },
-            'body': json.dumps({'error': str(ex)}),
-        }
-
-# ストリーミングデータを収集する非同期関数
-async def collect_stream_chunks(retrieved_results, search_text):
-    """ストリーミングレスポンスのチャンクを収集します.
-
-    Args:
-        retrieved_results: 検索結果のリストです.
-        search_text: 検索テキストです.
-
-    Returns:
-        list: 収集されたチャンクのリストです.
-    """
-    chunks = []
-    async for chunk in generate_stream(retrieved_results, search_text):
-        chunks.append(chunk)
-    return chunks
-
 
 if __name__ == '__main__':
     uvicorn.run(app, host=SERVER_HOST, port=SERVER_PORT)

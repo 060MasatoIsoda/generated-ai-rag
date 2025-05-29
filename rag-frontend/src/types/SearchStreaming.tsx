@@ -49,24 +49,91 @@ export interface SearchStreamingResponse {
 
 // 検索結果のインターフェース
 export interface SearchStreamingResult {
-  categories: string[];
-  documents: Document[];
-  section_name: string;
-  highest_score_text: string;
-  result_message: string;
+  sectionName: string;
+  documents: {
+    documentUrl: string;
+    pageNumber: number;
+    score: number;
+  }[];
 }
 
+// ストリーミングレスポンスのインターフェース
+export interface StreamingResponse {
+  type: 'resultText' | 'documents' | 'error';
+  sectionName?: string;
+  content: string | {
+    documentUrl: string;
+    pageNumber: number;
+    score: number;
+  };
+}
+
+// 検索リクエストのペイロード
 export type SearchStreamingPayload = {
   search_text: string;
-  search_target: {
+  search_target?: {
     section_name: string;
     category: string[];
   };
 };
 
+// 生成リクエストのペイロード
+export type GenerateStreamingPayload = {
+  searchText: string;
+  documents: {
+    documentUrl: string;
+    pageNumber: number;
+    score: number;
+  }[];
+  sectionName: string;
+};
+
+export type GeneratedResultActions = {
+  updateAnswer: (sectionName: string, text: string) => void;
+  updateDoc: (sectionName: string, doc: LocalDocItem) => void;
+  setIsFinished: (isFinished: boolean) => void;
+};
+
+export type LocalSectionResult = {
+  answer: string;
+  docs: LocalDocItem[];
+};
+
+
+export type LocalDocItem = {
+  similarity: number;
+  documentUrl: string;
+  pageNumber: string;
+};
+
+export type DecodedResponse = {
+  type: string;
+  sectionName: string;
+  content: string;
+};
+
+export type DecodedResponseDoc = {
+  documentUrl: string;
+  pageNumber: string;
+  score: string;
+};
+
+export type DecodedResponseWithDoc = {
+  type: string;
+  content: DecodedResponseDoc[];
+};
 
 export type MasterDataResponse = {
   query: string;
   results: MasterDataItem[];
   total: number;
+};
+
+export type GeneratePayload = {
+  searchText: string;
+  documents: {
+    documentUrl: string;
+    pageNumber: number;
+    score: number;
+  }[];
 };
